@@ -1,5 +1,5 @@
 import sys
-from typing import TextIO
+from typing import Iterable, Optional, TextIO
 
 
 class Dependency:
@@ -16,17 +16,28 @@ class Dependency:
 
 class Dependencies:
     filetype: str
-    dependencies: list[Dependency]
+    dependencies: dict[str, Dependency]
 
-    def __init__(self, filetype, dependencies):
+    def __init__(self, filetype: str, dependencies: Iterable[Dependency] = []):
         self.filetype = filetype
-        self.dependencies = dependencies
+        self.dependencies = dict()
+        for dependency in dependencies:
+            self.dependencies[dependency.name] = dependency
 
     def __str__(self):
         return f"Dependencies(filetype={self.filetype}, dependencies={self.dependencies})"
 
     def __iter__(self):
-        return iter(self.dependencies)
+        return self.dependencies.values()
+
+    def add(self, dependency):
+        self.dependencies[dependency.name] = dependency
+
+    def contain(self, name):
+        return name in self.dependencies
+
+    def get(self, name) -> Optional[Dependency]:
+        return self.dependencies.get(name, None)
 
 
 class Config:

@@ -6,7 +6,7 @@ from typing import Callable, Iterable, Optional, TypeVar
 import click
 import pygit2
 
-from . import changes, core, dependencies, logger
+from . import cache, changes, core, dependencies, logger
 
 T = TypeVar("T")
 
@@ -41,9 +41,9 @@ def main(config=None, ref=None, verbose=False) -> int:
     observed_dependencies = dependencies.from_file(Path(config) if config else None)
     logger.debug(f"Observed dependencies: {observed_dependencies}")
 
-    # Diff current repository using firstly the revision if specified, then the staged
-    # changes and then unstaged changes. We use diffs with 3 context lines that are necessary
-    # for example for poetry.lock that has records spread over multiple lines
+    # Diff current repository using firstly the revision if specified, then staged changes,
+    # unstaged changes and finally try diff with last commit. We use diffs with 3 context lines that
+    # are necessary for example for poetry.lock that has records spread over multiple lines
     repository = pygit2.Repository(".")
     diffs: pygit2.Diff = (
         repository.diff(a=ref, context_lines=3)
@@ -71,12 +71,13 @@ def main(config=None, ref=None, verbose=False) -> int:
         if changes.extractable(diff):
             upgrades.extend(changes.extract(observed_dependencies, diff))
 
-    logger.debug(f"Observed upgrades: {upgrades}")
-    # commit_logs = commits.from(changes)
-
-    print("dummy123: 1.0.0 => 1.1.0")
-    print("JIRA-123: <blabla>")
-    print("JIRA-543: <xyz>")
+    for u in upgrades:
+        if observed_dependencies.contain(u.name):
+            d = observed_dependencies.get(u.name)
+            messages = cache.messages(d.name, d.url, "v" + u.new_version, "v" + u.old_version)
+            for message in messages:
+                logger.debug("--- new message ---")
+                logger.debug(message)
 
     return 0
 

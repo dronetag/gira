@@ -26,12 +26,11 @@ def extract(dependencies: Dependencies, diff: pygit2.Diff) -> Iterable[Upgrade]:
 
     path = Path(diff.delta.new_file.path)
     logger.debug("Extracting changes from %s", path)
-    deps = {dep.name for dep in dependencies}
     upgrades: dict[str, Upgrade] = {}
 
     def apply_changes(changes: Iterable[Change]):
         for change in changes:
-            if change.name not in deps:
+            if not dependencies.contain(change.name):
                 continue
             if change.name not in upgrades:
                 upgrades[change.name] = Upgrade(name=change.name)
