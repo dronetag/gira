@@ -1,0 +1,5 @@
+  - id: gira
+    name: gira
+    entry: gira >>
+    language: system
+    stages: [commit-msg]
