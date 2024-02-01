@@ -1,18 +1,19 @@
 """cache provides caching of git repositories and basic operations"""
 
+import subprocess
 from pathlib import Path
 
 import pygit2
 
 from . import logger
 
-CACHE_DIR = Path(".gira")
+CACHE_DIR = Path(".gira-cache")
 MESSAGE_LIMIT = 250
 
 
 def messages(project: str, url: str, a: str, b: str) -> list[str]:
     """Return commit messages between two revisions a and b"""
-    repo_dir = CACHE_DIR / project
+    repo_dir = CACHE_DIR / (project + ".git")
     if not CACHE_DIR.exists():
         CACHE_DIR.mkdir()
 
@@ -22,21 +23,14 @@ def messages(project: str, url: str, a: str, b: str) -> list[str]:
         url = f"{url}.git"
 
     if not repo_dir.exists():
-        try:
-            logger.debug(f"Cloning {project} with url {url} to {repo_dir}")
-            repository = pygit2.clone_repository(url, repo_dir, bare=True)
-        except pygit2.GitError:
-            logger.error(f"Could not clone {project} with url {url} to {repo_dir}")
-            if repo_dir.exists():
-                repo_dir.rmdir()
-            raise
+        logger.debug(f"Cloning {project} with url {url} to {repo_dir}")
+        subprocess.run(["git", "clone", "--bare", url, repo_dir], check=True)
     else:
-        logger.debug(f"Re-useing existing {repo_dir}")
-        repository = pygit2.Repository(repo_dir, pygit2.GIT_REPOSITORY_OPEN_BARE)
         logger.debug("Fetching from origin")
-        remote = repository.remotes["origin"]
-        remote.fetch()
+        subprocess.run(["git", "fetch", "origin"], cwd=repo_dir, check=True)
 
+    logger.debug(f"Getting commit messages from {a} to {b} (in reverse chronological order)")
+    repository = pygit2.Repository(repo_dir, pygit2.GIT_REPOSITORY_OPEN_BARE)
     ending_tag = repository.revparse_single(a)
     starting_tag = repository.revparse_single(b)
 
@@ -47,6 +41,6 @@ def messages(project: str, url: str, a: str, b: str) -> list[str]:
         if commit.oid.hex == starting_tag.oid.hex:
             break
         if i >= MESSAGE_LIMIT:
-            logger.warning(f"Reached limit of {MESSAGE_LIMIT} commits when going from {a} to {b}")
+            logger.warning(f"Reached limit {MESSAGE_LIMIT} commits for {project} change {a} => {b}")
             break
     return messages
