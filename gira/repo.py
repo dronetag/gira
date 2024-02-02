@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 import pygit2
 
@@ -16,7 +16,7 @@ class Repo:
         self.bare = bare
         self.ref = self._check_ref(ref)
 
-    def changed_files(self) -> Iterable[Path]:
+    def changed_files(self) -> list[Path]:
         """List changed filenames in the repository since `self.ref` revision"""
         try:
             diffs = self.repo.diff(self.ref, context_lines=0)
@@ -27,7 +27,7 @@ class Repo:
         for diff in diffs:
             if diff.delta.new_file.path:
                 files.add(diff.delta.new_file.path)
-        return (Path(s) for s in files)
+        return [Path(s) for s in files]
 
     def get_current_content(self, path: Path) -> str:
         """Get content of given filepath as it is on the disk right now"""

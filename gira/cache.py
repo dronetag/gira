@@ -25,10 +25,10 @@ def messages(project: str, url: str, a: str, b: str) -> list[str]:
     # use the binary for remote url to avoid issues with ssh keys
     if not repo_dir.exists():
         logger.debug(f"Cloning {project} with url {url} to {repo_dir}")
-        subprocess.run(["git", "clone", "--bare", url, repo_dir], check=True)
+        subprocess.run(["git", "clone", "--bare", url, repo_dir], check=True, capture_output=True)
     else:
         logger.debug("Fetching from origin")
-        subprocess.run(["git", "fetch", "origin"], cwd=repo_dir, check=True)
+        subprocess.run(["git", "fetch", "origin"], cwd=repo_dir, check=True, capture_output=True)
 
     logger.debug(f"Getting commit messages from {a} to {b} (in reverse chronological order)")
     repository = pygit2.Repository(repo_dir, pygit2.GIT_REPOSITORY_OPEN_BARE)

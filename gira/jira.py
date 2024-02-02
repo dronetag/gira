@@ -26,41 +26,55 @@ class Ticket:
 
     def __str__(self) -> str:
         if self.summary:
-            return f"{self.name}: {self.summary}\n{self.url}"
+            return f"{self.name}: {self.summary} ({self.url})"
         if self.url:
             return f"{self.name}: {self.url}"
         return self.name
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+
+def extract_tickets(msg: str) -> list[Ticket]:
+    return [Ticket(name) for name in extract_ticket_names(msg)]
 
 
 class Jira:
     url: str
     token: Optional[str]
+    email: Optional[str]
     projects: list[str]
 
     _client = None
 
-    def __init__(self, url: str = "", token: str = "", **kwargs):
+    def __init__(self, url: str = "", token: str = "", email: str = "", **kwargs):
         self.url = url
         self.token = token
+        self.email = email
         self.projects = []
-        if url and token:
+        if url and email and token:
+            self._client = jira.JIRA(url, basic_auth=(email, token))  # depends on instance settings
+        elif url and token:
             self._client = jira.JIRA(url, token_auth=token)
-            # or = jira.JIRA(url, basic_auth=(email, token)) # depends on our instance settings
+        else:
+            self._client = None
 
     def __str__(self):
         return f"Jira(url={self.url}, token={self.token})"
 
-    def get_ticket_info(self, name: str) -> Ticket:
-        ticket = Ticket(name)
+    def get_ticket_details(self, name: str) -> Optional[Ticket]:
+        return self.update_ticket_details(Ticket(name))
 
+    def update_ticket_details(self, ticket: Ticket) -> Optional[Ticket]:
         if self.url:
-            ticket.url = (self.url + "/browse/" + name).replace("//", "/")
+            ticket.url = (self.url + "/browse/" + ticket.name).replace("//browse", "/browse")
 
         if self._client:
             try:
-                ticket.summary = self._client.issue(name, fields="summary").fields.summary
+                ticket.summary = self._client.issue(ticket.name, fields="summary").fields.summary
             except jira.JIRAError as e:
-                logger.error("Could not get JIRA tickets from {config.jira.url}")
-                logger.error(str(e))
+                logger.warn(f"{ticket.name}: {e.text} ({e.status_code})")
+                logger.debug(str(e))
+                return None
 
         return ticket
