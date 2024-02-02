@@ -1,11 +1,11 @@
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional, TextIO
 
 from . import cache, config, core, dependencies, jira, logger, repo
 
 
-def gira(config: config.Config, ref: Optional[str], files: list[str]):
+def gira(config: config.Config, ref: Optional[str], files: list[str] = [], stream=sys.stdout):
     """Main function of gira"""
     # Diff current repository using firstly the revision if specified, then staged changes,
     # unstaged changes and finally try diff with last commit. We use diffs with 3 context lines that
@@ -35,32 +35,28 @@ def gira(config: config.Config, ref: Optional[str], files: list[str]):
 
     # extract JIRA tickets from commit messages between two tags that follow semantic release
     # modify upgrades by creating dict with keys but empty values (ready for summaries of tickets)
-    for u in upgrades:
-        url = config.dependencies[u.name]  # this might return an object with more information
-        messages = cache.messages(u.name, url, u.new_version, u.old_version)
-        for message in messages:
-            u.tickets.update({k: "" for k in jira.extract_tickets(message)})
-        if len(u.tickets) == 0:
+    for upgrade in upgrades:
+        url = config.dependencies[upgrade.name]  # this might return an object with more information
+        messages = cache.messages(upgrade.name, url, upgrade.new_version, upgrade.old_version)
+        ticket_names = {ticket for m in messages for ticket in jira.extract_ticket_names(m)}
+        if len(ticket_names) == 0:
             logger.info(
-                f"No JIRA tickets found in commits for {u.name} between"
-                f" {u.new_version} and {u.old_version}"
+                f"No JIRA tickets found in commits for {upgrade.name} between"
+                f" {upgrade.new_version} and {upgrade.old_version}"
             )
-
-    # if we have JIRA connection information then enrich tickets with titles/summaries
-    if config.jira:
-        try:
-            for upgrade in upgrades:
-                upgrade.tickets.update(
-                    jira.get_titles(config.jira.url, config.jira.token, upgrade.tickets.keys())
-                )
-        except jira.JIRAError as e:
-            logger.error("Could not get JIRA tickets from {config.jira.url}")
-            logger.error(str(e))
-
-    # write out upgrades
-    for i, upgrade in enumerate(upgrades):
-        if len(upgrade.tickets) == 0:
             continue
-        if i > 0:
-            print("", file=sys.stdout)  # indent each upgrade with empty line
-        upgrade.to_stream(sys.stdout)
+        _print(upgrade, map(config.jira.get_ticket_info, ticket_names), stream=stream)
+
+
+def _print(upgrade: core.Upgrade, tickets: Iterable[jira.Ticket], stream: TextIO):
+    print(str(upgrade), file=stream, end="")
+    sep = " "
+    for i, ticket in enumerate(tickets):
+        if ticket.summary or ticket.url:
+            if i == 0:
+                print("", file=stream)  # make a new line for the first ticket
+            print(ticket, file=stream)
+        else:
+            print(f"{sep}{ticket}", file=stream, end="")
+            sep = ", "
+    print("", file=stream)

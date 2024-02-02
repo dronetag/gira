@@ -7,7 +7,7 @@ import pygit2
 
 from . import logger
 
-CACHE_DIR = Path(".gira-cache")
+CACHE_DIR = Path(".gira_cache")
 MESSAGE_LIMIT = 250
 
 
@@ -22,6 +22,7 @@ def messages(project: str, url: str, a: str, b: str) -> list[str]:
     if not url.endswith(".git"):
         url = f"{url}.git"
 
+    # use the binary for remote url to avoid issues with ssh keys
     if not repo_dir.exists():
         logger.debug(f"Cloning {project} with url {url} to {repo_dir}")
         subprocess.run(["git", "clone", "--bare", url, repo_dir], check=True)
@@ -41,6 +42,6 @@ def messages(project: str, url: str, a: str, b: str) -> list[str]:
         if commit.oid.hex == starting_tag.oid.hex:
             break
         if i >= MESSAGE_LIMIT:
-            logger.warning(f"Reached limit {MESSAGE_LIMIT} commits for {project} change {a} => {b}")
+            logger.warning(f"Reached limit {MESSAGE_LIMIT} commits for {project}")
             break
     return messages

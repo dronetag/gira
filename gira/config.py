@@ -11,6 +11,7 @@ import yaml
 
 from . import logger
 from .core import Config
+from .jira import Jira
 
 DEFAULT_CONFIG_PATHS = (
     ".gira.yaml",
@@ -65,7 +66,7 @@ def _pytoml(path: Path) -> Config:
 def _conf(path: Path) -> Config:
     """Parse watched dependencies by GIRA from .girarc"""
     parsed = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
-    return Config(jira=parsed.get("jira", {}), dependencies=parsed.get("dependencies", {}))
+    return Config(jira=Jira(**parsed.get("jira", {})), dependencies=parsed.get("dependencies", {}))
 
 
 def _west(path: Path) -> Config:

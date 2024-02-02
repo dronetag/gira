@@ -1,4 +1,4 @@
-from typing import Optional, TextIO
+from .jira import Jira
 
 
 class Dependency:
@@ -15,22 +15,8 @@ class Dependency:
         return self.name
 
 
-class Jira:
-    url: str
-    token: str
-    projects: list[str]
-
-    def __init__(self, url: str, token: str):
-        self.url = url
-        self.token = token
-        self.projects = []
-
-    def __str__(self):
-        return f"Jira(url={self.url}, token={self.token})"
-
-
 class Config:
-    jira: Optional[Jira]
+    jira: Jira
     dependencies: dict[str, str]  # name -> url
 
     def __init__(self, jira, dependencies):
@@ -56,7 +42,6 @@ class Upgrade:
     name: str
     old_version: str
     new_version: str
-    tickets: dict[str, str]
 
     def __init__(self, name, old_version=None, new_version=None):
         self.name = name
@@ -66,14 +51,3 @@ class Upgrade:
 
     def __str__(self):
         return f"{self.name} {self.old_version} => {self.new_version}:"
-
-    def to_stream(self, stream: TextIO):
-        print(f"{self.name} ({self.old_version} => {self.new_version}):", file=stream, end="")
-        sep = " "
-        for ticket, title in self.tickets.items():
-            if title:
-                print(f"\n  {ticket}: {title}", file=stream, end="")
-            else:
-                print(f"{sep}{ticket}", end="")
-                sep = ", "
-        print("", file=stream)
