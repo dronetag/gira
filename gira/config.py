@@ -10,47 +10,51 @@ from pathlib import Path
 import yaml
 
 from . import logger
-from .core import Config
 from .jira import Jira
 
 DEFAULT_CONFIG_PATHS = (
     ".gira.yaml",
     "pyproject.toml",
+    "west.yml",
+    "west.yaml",
 )
 
 
+class Config:
+    jira: Jira
+    observe: dict[str, str]  # name -> url
+    submodules: bool
+
+    def __init__(self, jira, observe, submodules=True):
+        self.jira = jira
+        self.observe = observe
+        self.submodules = submodules
+
+
 def from_file(path: Optional[Path]) -> Config:
-    """Load observed dependencies from configuration file"""
+    """Load configuration file"""
     if path and path.exists():
         return _parse_file(path)
 
     for path_str in DEFAULT_CONFIG_PATHS:
         if Path(path_str).exists():
-            try:
-                return _parse_file(Path(path_str))
-            except RuntimeError as e:
-                logger.debug(str(e))
+            logger.debug(f"Loading configuration from {path_str}")
+            return _parse_file(Path(path_str))
 
-    raise RuntimeError(
-        f"Cannot find valid configuration file in the default paths {DEFAULT_CONFIG_PATHS}"
-    )
-
-
-def _section(d, path):
-    for key in path.split("."):
-        if key not in d:
-            return {}
-        d = d[key]
-    return d
+    raise FileNotFoundError("No configuration file found")
 
 
 def _parse_file(path: Path) -> Config:
-    logger.debug(f"Loading observed dependencies from {path}")
     if path.name == "pyproject.toml":
         return _pytoml(path)
     if path.name == ".gira.yaml":
         return _conf(path)
-    raise RuntimeError(f"Unknown configuration file format {path}")
+    if path.name.startswith("west"):
+        return _west(path)
+    if path.name.endswith(".yaml"):
+        return _generic_yaml(path)
+    logger.warning("Running with empty configuration")
+    return Config(jira=Jira(), observe={})
 
 
 def _pytoml(path: Path) -> Config:
@@ -59,16 +63,38 @@ def _pytoml(path: Path) -> Config:
         parsed = toml.load(f)
         return Config(
             jira=_section(parsed, "tool.gira.jira"),
-            dependencies=_section(parsed, "tool.gira.dependencies"),
+            observe=_section(parsed, "tool.gira.observe"),
         )
 
 
 def _conf(path: Path) -> Config:
     """Parse watched dependencies by GIRA from .girarc"""
     parsed = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
-    return Config(jira=Jira(**parsed.get("jira", {})), dependencies=parsed.get("dependencies", {}))
+    return Config(jira=Jira(**_section(parsed, "jira")), observe=_section(parsed, "observe"))
+
+
+def _generic_yaml(path: Path) -> Config:
+    """Parse watched dependencies by GIRA from .girarc"""
+    parsed = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
+    return Config(
+        jira=Jira(**_section(parsed, "gira.jira")), observe=_section(parsed, "gira.observe")
+    )
 
 
 def _west(path: Path) -> Config:
-    _ = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
-    raise NotImplementedError("Not implemented yet")
+    parsed = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
+    jira = _section(parsed, "manifest.gira.jira")
+    observe = _section(parsed, "manifest.gira.observe")
+    return Config(
+        jira=Jira(**jira),
+        observe=observe,
+    )
+
+
+def _section(d: Optional[dict], path: str) -> dict:
+    """Return dot-separated path from dictionary"""
+    for key in path.split("."):
+        if not d or key not in d:
+            return {}
+        d = d[key]
+    return d or {}

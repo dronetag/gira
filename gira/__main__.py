@@ -26,7 +26,7 @@ def main(config: str, ref: str, verbose: bool, format: str, args: list[str]) -> 
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     conf = config_parser.from_file(Path(config) if config else None)
-    if not conf.dependencies:
+    if not conf.observe and not conf.submodules:
         logger.error("No observed dependencies found in gira configuration file")
         return 1
 

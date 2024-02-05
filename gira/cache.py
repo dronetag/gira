@@ -3,15 +3,14 @@
 import subprocess
 from pathlib import Path
 
-import pygit2
+import pygit2  # type: ignore
 
-from . import logger
+from . import logger, repo
 
 CACHE_DIR = Path(".gira_cache")
-MESSAGE_LIMIT = 250
 
 
-def messages(project: str, url: str, a: str, b: str) -> list[str]:
+def cache(project: str, url: str) -> pygit2.Repository:
     """Return commit messages between two revisions a and b"""
     repo_dir = CACHE_DIR / (project + ".git")
     if not CACHE_DIR.exists():
@@ -29,19 +28,13 @@ def messages(project: str, url: str, a: str, b: str) -> list[str]:
     else:
         logger.debug("Fetching from origin")
         subprocess.run(["git", "fetch", "origin"], cwd=repo_dir, check=True, capture_output=True)
+    return repo.Repo(repo_dir, ref="HEAD", bare=True)
 
-    logger.debug(f"Getting commit messages from {a} to {b} (in reverse chronological order)")
-    repository = pygit2.Repository(repo_dir, pygit2.GIT_REPOSITORY_OPEN_BARE)
-    ending_tag = repository.revparse_single(a)
-    starting_tag = repository.revparse_single(b)
 
-    commits = repository.walk(ending_tag.oid)
-    messages = []
-    for i, commit in enumerate(commits):
-        messages.append(commit.message.strip())
-        if commit.oid.hex == starting_tag.oid.hex:
-            break
-        if i >= MESSAGE_LIMIT:
-            logger.warning(f"Reached limit {MESSAGE_LIMIT} commits for {project}")
-            break
-    return messages
+def messages(project: str, url: str, a: str, b: str) -> list[str]:
+    """Return commit messages between two revisions a and b for cached git repository
+
+    @deprecated use cache() and repo.messages() instead.
+    """
+    repo = cache(project, url)
+    return repo.messages(a, b)
