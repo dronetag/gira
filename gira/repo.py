@@ -18,7 +18,10 @@ class Repo:
         self.path = path
         self.repo = pygit2.Repository(str(path), pygit2.GIT_REPOSITORY_OPEN_BARE if bare else 0)
         self.bare = bare
-        self.ref = self._check_ref(ref)
+        try:
+            self.ref = self._check_ref(ref)
+        except KeyError as e:
+            raise RuntimeError(f"Revision {e.args[0]} does not exist")
         self._submodules = None
 
     @property
@@ -92,10 +95,8 @@ class Repo:
                 return "refs/tags/" + ref
             except KeyError:
                 return "refs/heads/" + ref
-
         if self.repo and len(self.repo.diff("HEAD")) == 0:
             return "HEAD^"
-
         return "HEAD"
 
     def messages(self, a: str, b: Optional[str] = None):

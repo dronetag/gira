@@ -1,0 +1,19 @@
+manifest:
+  version: 0.7
+
+  remotes:
+  - name: local
+    url-base: file://${GIRA_TEST_ROOT}/remote
+
+  defaults:
+      remote: local
+
+  projects:
+  - name: dep1
+    repo-path: libs/dep1
+    revision: v1.0.0
+    import: true
+
+  gira:
+   observe:
+     dep1: "file://${GIRA_TEST_ROOT}/remote/dep1/.git"

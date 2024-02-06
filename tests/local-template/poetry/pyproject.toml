@@ -1,0 +1,31 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "gira-test"
+version = "0.0.0"
+repository = "https://github.com/dronetag/gira"
+authors = [
+  "Tomas Peterka <tomas.peterka@dronetag.cz>",
+]
+description = "Dummy pytoml"
+readme = "README.md"
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+dep1 = "1.0.0"
+wheel = "*"
+pytest = {version="*", optional=true}
+
+[tool.poetry.extras]
+dev = ["wheel", "pytest"]
+
+[tool.gira.observe]
+dep1 = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gira-test"
+version = "0.0.0"
+requires-python = ">=3.8"
+description = "GIRA places JIRA tickets from your dependencies into your commit message"
+readme = "README.md"
+license.text = "MIT"
+authors = [{name = "Tomas Peterka", email = "tomas.peterka@dronetag.cz"},]
+dependencies = [
+  "click",
+  "pygit2",
+  "tomli; python_version < '3.11'",
+  "pyyaml",
+  "jira",
+  "dep1==1.0.0",
+]
+
+[tool.gira.observe]
+dep1 = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"

@@ -8,7 +8,6 @@ if sys.version_info >= (3, 11):
     import tomllib as toml
 else:
     import tomli as toml
-
 from pathlib import Path
 
 version_re = re.compile(r"""([0-9]+\.[0-9]+[^"',]*)""")
@@ -60,7 +59,7 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
             dependencies[name] = "v" + version_match.group(1)
 
     if _section(parsed, "tool.poetry.dependencies"):
-        """The developer chould decide not to version poetry.lock so we need to parse pyproject.toml
+        """The developer could decide not to version poetry.lock so we need to parse pyproject.toml
 
         Example:
             [tool.poetry.dependencies]
@@ -69,7 +68,7 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
             pymavlink = "^2.4.20"
             ruff = {version="*", optional=true}
         """
-        for dependency, value in _section(parsed, "tool.poetry.dependencies"):
+        for dependency, value in _section(parsed, "tool.poetry.dependencies").items():
             if dependency not in observed:
                 continue
             version = ""
@@ -117,8 +116,7 @@ def parse_package_lock(content: str, Set: set[str]) -> dict[str, str]:
                 "@fontsource/roboto": "^4.2.3",
                 "@fontsource/titillium-web": "^4.5.8",
     """
-    # TODO: implement
-    return {}
+    raise NotImplementedError("Not implemented parsing dependencies from package.json")
 
 
 def parse_pubspec_yaml(content: str, observed: dict[str, str]) -> dict[str, str]:

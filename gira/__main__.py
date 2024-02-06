@@ -1,44 +1,42 @@
+import argparse
 import logging
 import sys
 from pathlib import Path
-
-import click
 
 from . import config as config_parser
 from . import gira, logger
 
 
-@click.command()
-@click.option("-r", "--ref", "ref", type=str)
-@click.option("-c", "--config", "config", type=str)
-@click.option("-v", "--verbose", "verbose", type=bool, is_flag=True)
-@click.option(
-    "-f",
-    "--format",
-    "format",
-    type=str,
-    default="commit",
-    help="Output format: commit, detail, markdown",
-)
-@click.argument("args", nargs=-1)
-def main(config: str, ref: str, verbose: bool, format: str, args: list[str]) -> int:
-    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, stream=sys.stderr)
+def main() -> int:
+    """Prepare gira to run with arguments from command line. Return exit code."""
+    parser = argparse.ArgumentParser(description="Gira - Git Dependencies Analyzer")
+    parser.add_argument("-r", "--ref", type=str)
+    parser.add_argument("-c", "--config", type=str)
+    parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument(
+        "-f", "--format", type=str, default="commit", help="Output format: commit, detail, markdown"
+    )
+    parser.add_argument("args", nargs=argparse.REMAINDER)
+    args = parser.parse_args(sys.argv[1:])
+
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, stream=sys.stderr)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-    conf = config_parser.from_file(Path(config) if config else None)
+    logger.debug(f"Arguments: {args}")
+    conf = config_parser.from_file(Path(args.config) if args.config else None)
     if not conf.observe and not conf.submodules:
         logger.error("No observed dependencies found in gira configuration file")
         return 1
 
     stream = sys.stdout
-    precommit = len(args) > 0 and args[0] == ".git/COMMIT_EDITMSG"
+    precommit = len(args.args) > 0 and args.args[0] == ".git/COMMIT_EDITMSG"
     if precommit:
-        commit_msg_file = args[0]
+        commit_msg_file = args.args[0]
         logger.debug(f"Outputting to commit message file {commit_msg_file}")
         stream = Path(commit_msg_file).open("at", newline="\n")
 
     try:
-        gira.gira(conf, format=format, stream=stream, ref=ref)
+        gira.gira(conf, format=args.format, stream=stream, ref=args.ref)
         return 0
     except Exception as e:
         logger.debug(e, stack_info=True)

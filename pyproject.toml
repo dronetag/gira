@@ -11,7 +11,6 @@ readme = "README.md"
 license.text = "MIT"
 authors = [{name = "Tomas Peterka", email = "tomas.peterka@dronetag.cz"},]
 dependencies = [
-  "click",
   "pygit2",
   "tomli; python_version < '3.11'",
   "pyyaml",
