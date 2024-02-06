@@ -1,5 +1,5 @@
   - id: gira
     name: gira
-    entry: gira-precommit
-    language: system
+    entry: gira
+    language: python
     stages: [prepare-commit-msg]

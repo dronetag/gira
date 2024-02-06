@@ -12,12 +12,7 @@ import yaml
 from . import logger
 from .jira import Jira
 
-DEFAULT_CONFIG_PATHS = (
-    ".gira.yaml",
-    "pyproject.toml",
-    "west.yml",
-    "west.yaml",
-)
+DEFAULT_CONFIG = Path(".gira.yaml")
 
 
 class Config:
@@ -36,19 +31,17 @@ def from_file(path: Optional[Path]) -> Config:
     if path and path.exists():
         return _parse_file(path)
 
-    for path_str in DEFAULT_CONFIG_PATHS:
-        if Path(path_str).exists():
-            logger.debug(f"Loading configuration from {path_str}")
-            return _parse_file(Path(path_str))
+    if DEFAULT_CONFIG.exists():
+        return _parse_file(DEFAULT_CONFIG)
 
     raise FileNotFoundError("No configuration file found")
 
 
 def _parse_file(path: Path) -> Config:
-    if path.name == "pyproject.toml":
-        return _pytoml(path)
     if path.name == ".gira.yaml":
         return _conf(path)
+    if path.name == "pyproject.toml":
+        return _pytoml(path)
     if path.name.startswith("west"):
         return _west(path)
     if path.name.endswith(".yaml"):

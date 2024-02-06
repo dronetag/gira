@@ -12,12 +12,14 @@ class Repo:
     bare: bool
     repo: pygit2.Repository
     _submodules: Optional[dict[Path, str]]
+    _diff_cached: bool
     MESSAGE_LIMIT = 250
 
     def __init__(self, path: Path, ref: Optional[str] = "", bare: bool = False):
         self.path = path
         self.repo = pygit2.Repository(str(path), pygit2.GIT_REPOSITORY_OPEN_BARE if bare else 0)
         self.bare = bare
+        self._diff_cached = False
         try:
             self.ref = self._check_ref(ref)
         except KeyError as e:
@@ -52,7 +54,7 @@ class Repo:
     def submodule_change(self, submodule_path: Path) -> tuple[str, str]:
         """Return list of lines added and removed in the diff"""
         try:
-            diffs = self.repo.diff(self.ref, context_lines=0)
+            diffs = self.repo.diff(self.ref, context_lines=0, cached=self._diff_cached)
         except KeyError:
             raise RuntimeError(f"Revision {self.ref} does not exist")
 
@@ -95,8 +97,11 @@ class Repo:
                 return "refs/tags/" + ref
             except KeyError:
                 return "refs/heads/" + ref
-        if self.repo and len(self.repo.diff("HEAD")) == 0:
-            return "HEAD^"
+        if self.repo and len(self.repo.diff("HEAD")) > 0:
+            return "HEAD"
+        if self.repo and len(self.repo.diff("HEAD", cached=True)) > 0:
+            self._diff_cached = True
+            return "HEAD"
         return "HEAD"
 
     def messages(self, a: str, b: Optional[str] = None):

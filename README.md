@@ -1,28 +1,47 @@
 # Gira
 
-Gira gathers JIRA tickets from commit messages of your updated dependencies when you
-change them in one of: `pyproject.toml`, `poetry.lock`, `west.yaml`, and `pubspec.yaml`.
-It is especially usefull in "prepare-commit-msg" stage of [pre-commit](https://pre-commit.com)
+Gira reacts on changes in your dependency files and bring you JIRA tickets mentioned in commits between current and updated version of the dependencies. Supported files are:
 
-//Disclaimer: works the best if your dependencies follow [semantic release](https://semantic-release.gitbook.io/semantic-release/) (have tags in `v{X.Y.*}` format)//
+- pyproject.toml
+- poetry.lock
+- west.yaml
+- pubspec.yaml
+
+ It is especially usefull in [pre-commit](https://pre-commit.com).
+
+___Pssst__: works the best if your dependencies follow [semantic release](https://semantic-release.gitbook.io/semantic-release/) thus have tags in `vX.Y.*` format.
 
 
 ## Usage
 
 ```bash
-gira [-r revision] [--format="commit|detail|markdown"]
+gira [-r revision] [-c config] [--format="commit|detail|markdown"]
 ```
 
-Revision can be tag/branch or a commit. Gira will check dependency files for changes between
-the current version and the revision version.
+Revision can be tag, branch, or a commit. By default `gira` check for staged/unstaged changes and if no are found then it diffs to the previous commit. This is the way to tell `gira` to diff to a different tag (for example).
 
-Format is useful if you generate into a commit message (only ticket names (e.g. JIRA-1234))
-or you want a user readable "detailed" print or the same but markdown formatted.
+Format can be short or detailed. Detailed formats will try to reach to your JIRA server for the details. The short (default) version is useful as suffix to
+commit messages. The markdown version is intended for changelogs.
 
 ```bash
 $ gira [--format=commit]
 internal-dependency1 <versionB> => <versionB>: JIRA-123, JIRA-567
 other-followed-lib <versionB> => <versionB>: JIRA-876, JIRA-543
+```
+
+Config file is by default _.gira.yaml_ but can be pretty much any YAML or pyproject.toml. See section bellow.
+
+## Pre-commit
+
+Add to your .pre-commit-config.yaml
+
+```yaml
+  - repo: https://github.com/dronetag/gira
+    rev: v1.0.0
+    hooks:
+    - id: gira
+      # if you use other config than .gira.yaml then
+      # args: ["-c", "your-config.yaml"]
 ```
 
 ## Configuration
@@ -32,13 +51,19 @@ YAML file that you specify with `-c` and has "gira.observe" and optionally "gira
 
 ### Observed Dependencies
 
-Observed dependencies are in form of NAME=git-url where NAME must be the same as specified
-in your dependency file (e.g. pyproject.toml or a YAML).
+Observed dependencies are in form of NAME=git-url where NAME must be the same as specified in your dependency/lock file.
 
 ```toml
 [tool.gira.observe]
 internal-lib1 = "github.com/company/internal-lib1"
 other-dependency = "bitbucket.com/company/other-dependency"
+```
+or
+```yaml
+gira:
+  observe:
+    internal-lib1: "github.com/company/internal-lib1"
+    other-dependency: "bitbucket.com/company/other-dependency"
 ```
 
 ### Submodules

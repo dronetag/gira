@@ -16,8 +16,8 @@ dependencies = [
   "tomli; python_version < '3.11'",
   "pyyaml",
   "jira",
-  "dep1==1.0.0",
+  "dep1-pytoml==1.0.0",
 ]
 
 [tool.gira.observe]
-dep1 = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
+dep1-pytoml = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"

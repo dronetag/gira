@@ -20,7 +20,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-dep1 = "1.0.0"
+dep1-poetry = "1.0.0"
 wheel = "*"
 pytest = {version="*", optional=true}
 
@@ -28,4 +28,4 @@ pytest = {version="*", optional=true}
 dev = ["wheel", "pytest"]
 
 [tool.gira.observe]
-dep1 = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
+dep1-poetry = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"

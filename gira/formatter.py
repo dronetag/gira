@@ -5,7 +5,7 @@ from .jira import Ticket
 
 
 def get_formatter(name: str, stream: TextIO):
-    if name == "commit":
+    if name in ("commit", "short"):
         return CommitFormatter(stream)
     if name in ("detail", "detailed"):
         return DetailFormatter(stream)

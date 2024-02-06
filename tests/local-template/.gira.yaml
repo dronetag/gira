@@ -1,0 +1,2 @@
+observed:
+  dep1: "file:///${GIRA_TEST_ROOT}/remote/dep1/.git"

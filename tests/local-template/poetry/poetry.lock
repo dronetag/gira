@@ -15,7 +15,7 @@ files = [
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
-name = "dep1"
+name = "dep1-poetry"
 version = "1.0.0"
 description = "The dummy dependency"
 optional = false

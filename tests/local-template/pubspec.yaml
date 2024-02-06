@@ -14,7 +14,7 @@ environment:
 
 dependencies:
   analyzer: ^5.13.0
-  dep1:
+  dep1-pubspec:
     git:
       url: file:///${GIRA_TEST_ROOT}/remote/dep1/.git
       ref: v1.0.0
@@ -22,4 +22,4 @@ dependencies:
 
 gira:
   observe:
-    dep1: "file:///${GIRA_TEST_ROOT}/remote/dep1/.git"
+    dep1-pubspec: "file:///${GIRA_TEST_ROOT}/remote/dep1/.git"

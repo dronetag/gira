@@ -16,61 +16,79 @@ envsubst < local-template/poetry/poetry.lock > local/poetry/poetry.lock
 envsubst < local-template/pyproject.toml > local/pyproject.toml
 envsubst < local-template/pubspec.yaml > local/pubspec.yaml
 envsubst < local-template/west.yaml > local/west.yaml
+envsubst < local-template/.gira.yaml > local/.gira.yaml
 
 
 pushd local
-git init
+git init 2> /dev/null
 git add .
-git commit -m "Initial commit"
+git commit -m "Initial commit" 2> /dev/null
 
+# run on no changes in dependencies
+echo "-- Test no changes" > README.md
+gira
+git reset README.md
+rm README.md
 
 #############################################
 ## run tests
-echo "Test poetry/poetry.lock"
+echo "-- Test poetry/poetry.lock"
 git reset --hard
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.0/g' poetry/poetry.lock
-gira > output.txt
+gira -c poetry/pyproject.toml | tee output.txt
+grep dep1-poetry output.txt
+grep "1.0.0" output.txt
+grep "1.1.0" output.txt
 grep OCD-1234 output.txt
 grep -v OCD-567 output.txt
 
 
-echo "Test poetry/pyproject.toml"
+echo "-- Test poetry/pyproject.toml"
 git reset --hard
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.1/g' poetry/pyproject.toml
 gira -c poetry/pyproject.toml > output.txt
+grep dep1-poetry output.txt
+grep "1.0.0" output.txt
+grep "1.1.1" output.txt
 grep OCD-1234 output.txt
 grep OCD-567 output.txt
 
 
-echo "Test pyproject.toml"
+echo "-- Test pyproject.toml"
 git reset --hard
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.0/g' pyproject.toml
-gira > output.txt
+gira -c pyproject.toml > output.txt
+grep dep1-pytoml output.txt
+grep "1.0.0" output.txt
+grep "1.1.0" output.txt
 grep OCD-1234 output.txt
 grep -v OCD-567 output.txt
 
 
-echo "Test pubspec.yaml"
+echo "-- Test pubspec.yaml"
 git reset --hard
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.1/g' pubspec.yaml
 gira -c pubspec.yaml > output.txt
+grep dep1-pubspec output.txt
 grep OCD-1234 output.txt
 grep OCD-567 output.txt
 
 
-echo "Test pubspec.yaml"
+echo "-- Test pubspec.yaml"
 git reset --hard
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.0/g' west.yaml
 gira -c west.yaml > output.txt
+grep dep1-west output.txt
 grep OCD-1234 output.txt
 grep -v OCD-567 output.txt
 
-echo "Test moving from 1.0.0 to 1.1.0 and then to 1.1.1"
+
+echo "-- Test moving from 1.0.0 to 1.1.0 and then to 1.1.1"
 git reset --hard
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.0/g' west.yaml
@@ -84,7 +102,7 @@ grep OCD-1234 output.txt
 grep OCD-567 output.txt
 
 
-echo "Test pre-commit"
+echo "-- Test pre-commit"
 git reset --hard
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.1/g' west.yaml

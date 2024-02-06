@@ -9,11 +9,11 @@ manifest:
       remote: local
 
   projects:
-  - name: dep1
+  - name: dep1-west
     repo-path: libs/dep1
     revision: v1.0.0
     import: true
 
   gira:
    observe:
-     dep1: "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
+     dep1-west: "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
