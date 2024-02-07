@@ -1,4 +1,4 @@
-name: "RELEASE"
+name: "Release"
 
 on:
   workflow_dispatch:
@@ -13,11 +13,39 @@ jobs:
       with: { fetch-depth: 0 } # Required to determine version
 
     - name: Get next release version
-      uses: dronetag/actions/get-next-version@main
-      id: get-next-version
+      uses: dronetag/actions/semantic-release@main
+      id: semantic
 
-    - name: Create the tag
+    - name: Build package
+      uses: dronetag/actions/build-python@main
+      with:
+        version: ${{ steps.semantic.outputs.version }}
+
+    - name: Commit version on release branch
+      if: ${{ steps.semantic.outputs.existed == 'false' }}
       run: |
+        if [[ $(git rev-parse origin/${{github.event.repository.default_branch}}) = $(git rev-parse HEAD) ]]; then
+          git checkout ${{github.event.repository.default_branch}}  # in case we are on tag
+          if [[ ! $(git diff --exit-code) ]]; then
+            git config --local user.email "" && git config --local user.name "GitHub Action"
+            git diff --name-only | xargs git add
+            git add changelog.md
+            git commit -m "Release ${{ steps.semantic.outputs.version }} [skip ci]"
+            git push origin ${{github.event.repository.default_branch}}
+          fi
+        fi
+
+    - name: Create the tag (if it does not exist yet)
+      run: |
+        git show-ref --tags --verify --quiet "refs/tags/v${{ steps.semantic.outputs.version }}" && exit 0
         git config --local user.email "" && git config --local user.name "GitHub Action"
-        git tag v${{ steps.get-next-version.outputs.version }}
-        git push origin v${{ steps.get-next-version.outputs.version }}
+        git tag v${{ steps.semantic.outputs.version }}
+        git push origin v${{ steps.semantic.outputs.version }}
+
+    - name: Release
+      uses: dronetag/actions/release-python@main
+      with:
+        pypi_name: dronetag
+        pypi_host: ${{ secrets.PRIV_PIP_HOST }}
+        pypi_user: ${{ secrets.PRIV_PIP_USER }}
+        pypi_pass: ${{ secrets.PRIV_PIP_PASSWORD }}
