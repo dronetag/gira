@@ -1,0 +1,23 @@
+name: "RELEASE"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Create release tag
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository (full-depth)
+      uses: actions/checkout@v4
+      with: { fetch-depth: 0 } # Required to determine version
+
+    - name: Get next release version
+      uses: dronetag/actions/get-next-version@main
+      id: get-next-version
+
+    - name: Create the tag
+      run: |
+        git config --local user.email "" && git config --local user.name "GitHub Action"
+        git tag v${{ steps.get-next-version.outputs.version }}
+        git push origin v${{ steps.get-next-version.outputs.version }}

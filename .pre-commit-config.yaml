@@ -10,29 +10,50 @@ repos:
       entry: ruff
       language: system
       types: [python]
+      stages: [pre-commit]
 
     - id: ruff-format
       name: ruff format
       entry: ruff format --diff
       language: system
       types: [python]
+      stages: [pre-commit]
 
     - id: mypy
       name: mypy
-      entry: mypy --exclude tests --ignore-missing-imports --follow-imports=skip --pretty
+      entry: mypy --exclude tests --pretty
       language: system
       types: [python]
+      stages: [pre-commit]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
     - id: trailing-whitespace
+      stages: [pre-commit]
     - id: check-docstring-first
+      stages: [pre-commit]
     - id: check-added-large-files
+      stages: [pre-commit]
+    - id: detect-aws-credentials
+      stages: [pre-commit]
+    - id: detect-private-key
+      stages: [pre-commit]
+    - id: check-json
+      stages: [pre-commit]
+    - id: check-toml
+      stages: [pre-commit]
     - id: check-yaml
+      stages: [pre-commit]
     - id: debug-statements
+      stages: [pre-commit]
     - id: check-merge-conflict
+      stages: [pre-commit]
+    - id: mixed-line-ending
+      args: [--fix=lf]
+      stages: [pre-commit]
     - id: end-of-file-fixer
+      stages: [pre-commit]
 
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
     rev: v9.11.0
