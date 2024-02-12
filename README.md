@@ -1,15 +1,15 @@
 # Gira
 
-Gira reacts on changes in your dependency files and bring you JIRA tickets mentioned in commits between current and updated version of the dependencies. Supported files are:
+Gira reacts to changes in your dependency files and bring you JIRA tickets mentioned in commits between current and updated version of the dependencies. Supported dependency files are
 
 - pyproject.toml
 - poetry.lock
 - west.yaml
 - pubspec.yaml
 
- It is especially usefull in [pre-commit](https://pre-commit.com).
+ It is especially usefull with [pre-commit](https://pre-commit.com).
 
-___Pssst__: works the best if your dependencies follow [semantic release](https://semantic-release.gitbook.io/semantic-release/) thus have tags in `vX.Y.*` format.
+__Pssst__: works the best if your dependencies follow [semantic release](https://semantic-release.gitbook.io/semantic-release/) thus have tags in `vX.Y.*` format.
 
 
 ## Usage
