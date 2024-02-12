@@ -1,3 +1,4 @@
+import os
 import re
 from typing import Optional
 
@@ -52,10 +53,19 @@ class Jira:
         self.token = token
         self.email = email
         self.projects = []
-        if url and email and token:
-            self._client = jira.JIRA(url, basic_auth=(email, token))  # depends on instance settings
-        elif url and token:
-            self._client = jira.JIRA(url, token_auth=token)
+        self._client = None
+        self._connect_error = 0
+        if token and token.startswith("file:"):
+            with open(token[5:], "rt") as f:
+                self.token = f.read().strip()
+        elif token and token.startswith("env:"):
+            self.token = os.environ.get(token[4:], "")
+
+    def connect(self):
+        if self.url and self.email and self.token:
+            self._client = jira.JIRA(self.url, basic_auth=(self.email, self.token))
+        elif self.url and self.token:
+            self._client = jira.JIRA(self.url, token_auth=self.token)
         else:
             self._client = None
 
@@ -69,7 +79,14 @@ class Jira:
         if self.url:
             ticket.url = (self.url + "/browse/" + ticket.name).replace("//browse", "/browse")
 
-        if self._client:
+        if self._client is None and self._connect_error == 0:
+            try:
+                self.connect()
+            except Exception as e:
+                logger.warn(f"Could not connect to Jira: {type(e)}: {e}")
+                self._connect_error += 1
+
+        if self._client is not None:
             try:
                 ticket.summary = self._client.issue(ticket.name, fields="summary").fields.summary
             except jira.JIRAError as e:
