@@ -10,3 +10,4 @@ charset = utf-8
 indent_style = space
 indent_size = 4
 max_line_length = 100
+file_header_template = Copyright (c) Donetag.cz. All rights reserved.\nLicensed under MIT License
