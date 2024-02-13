@@ -1,4 +1,4 @@
-set -e
+set -ex
 
 export GIRA_TEST_ROOT=$PWD
 
@@ -21,8 +21,9 @@ envsubst < local-template/.gira.yaml > local/.gira.yaml
 
 pushd local
 git init 2> /dev/null
+git config user.name "Test Action" && git config user.email ""
 git add .
-git commit -m "Initial commit" 2> /dev/null
+git commit -m "Initial commit"
 
 # run on no changes in dependencies
 echo "-- Test no changes" > README.md
