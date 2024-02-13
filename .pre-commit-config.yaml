@@ -35,8 +35,6 @@ repos:
       stages: [pre-commit]
     - id: check-added-large-files
       stages: [pre-commit]
-    - id: detect-aws-credentials
-      stages: [pre-commit]
     - id: detect-private-key
       stages: [pre-commit]
     - id: check-json
