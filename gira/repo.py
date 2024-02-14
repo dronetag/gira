@@ -3,7 +3,7 @@ from typing import Optional
 
 import pygit2  # type: ignore
 
-from . import logger
+from . import AlrightException, logger
 
 
 class Repo:
@@ -23,6 +23,8 @@ class Repo:
         try:
             self.ref = self._check_ref(ref)
         except KeyError as e:
+            if e.args[0] == "HEAD":
+                raise AlrightException("Git first commit")
             raise RuntimeError(f"Revision {e.args[0]} does not exist")
         self._submodules = None
 
@@ -43,6 +45,8 @@ class Repo:
         try:
             diffs = self.repo.diff(self.ref, context_lines=0)
         except KeyError:
+            if self.ref == "HEAD":
+                raise AlrightException("Git first commit")
             raise RuntimeError(f"Revision {self.ref} does not exist")
 
         files: set[str] = set()
