@@ -28,20 +28,28 @@ class CommitFormatter(Formatter):
     needs_details = False
 
     def print(self, upgrade: Upgrade, tickets: Iterable[Ticket]):
-        self._stream.write(str(upgrade))
+        chars = 0
         sep = " "
-        for ticket in tickets:
-            self._stream.write(sep)
-            self._stream.write(ticket.name)
-            sep = ", "
         self._stream.write("\n")
+        chars += self._stream.write(str(upgrade))
+        for ticket in tickets:
+            if chars > 72:
+                chars += self._stream.write(sep.strip())
+                self._stream.write("\n")
+                sep = "    "  # indent more at new line
+                chars = 0
+            else:
+                chars += self._stream.write(sep)
+                sep = ", "
+            chars += self._stream.write(ticket.name)
 
 
 class DetailFormatter(Formatter):
     needs_details = True
 
     def print(self, upgrade: Upgrade, tickets: Iterable[Ticket]):
-        self._stream.write(str(upgrade))
+        self._stream.write("\n")
+        self._stream.write(f"Dependency change {upgrade}")
         self._stream.write("\n")
 
         for ticket in tickets:
@@ -57,13 +65,14 @@ class MarkdownFormatter(Formatter):
     needs_details = True
 
     def print(self, upgrade: Upgrade, tickets: Iterable[Ticket]):
-        self._stream.write(str(upgrade))
+        self._stream.write("\n")
+        self._stream.write(f"### Dependency change {upgrade}")
         self._stream.write("\n")
 
         for ticket in tickets:
             if ticket is None:
                 continue
             if not ticket.summary:
-                self._stream.write(f"{ticket.name}: {ticket.url}\n")
+                self._stream.write(f"- {ticket.name}: {ticket.url}\n")
             else:
-                self._stream.write(f"[{ticket.name}]({ticket.url}): {ticket.summary}\n")
+                self._stream.write(f"- [{ticket.name}]({ticket.url}): {ticket.summary}\n")
