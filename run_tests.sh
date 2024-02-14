@@ -7,4 +7,9 @@ which envsubst
 which gira
 
 cd tests
-. run.sh
+if bash run.sh > /dev/null; then
+    echo "Tests passed"
+else
+    echo "Tests failed"
+    exit 1
+fi
