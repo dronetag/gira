@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import sys
+import traceback
 from pathlib import Path
 
 from . import AlrightException, gira, logger
@@ -43,8 +44,9 @@ def main() -> int:
         logger.info(e)
         return 0
     except Exception as e:
-        logger.debug(e, stack_info=True)
-        logger.error(f"{e.__class__.__name__}: {e}")
+        logger.error(f" {e.__class__.__name__}: {e}")
+        if args.verbose:
+            traceback.print_exception(e, file=sys.stderr)
         return 1
     finally:
         if precommit:

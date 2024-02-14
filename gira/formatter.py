@@ -47,8 +47,10 @@ class DetailFormatter(Formatter):
         for ticket in tickets:
             if ticket is None:
                 continue
-            self._stream.write(f"{ticket.name}: {ticket.summary} ({ticket.url})")
-            self._stream.write("\n")
+            if not ticket.summary:
+                self._stream.write(f"{ticket.name}: {ticket.url}\n")
+            else:
+                self._stream.write(f"{ticket.name}: {ticket.summary} ({ticket.url})\n")
 
 
 class MarkdownFormatter(Formatter):
@@ -61,4 +63,7 @@ class MarkdownFormatter(Formatter):
         for ticket in tickets:
             if ticket is None:
                 continue
-            self._stream.write(f"[{ticket.name}]({ticket.url}): {ticket.summary}\n")
+            if not ticket.summary:
+                self._stream.write(f"{ticket.name}: {ticket.url}\n")
+            else:
+                self._stream.write(f"[{ticket.name}]({ticket.url}): {ticket.summary}\n")
