@@ -31,6 +31,7 @@ jobs:
       uses: dronetag/actions/commit-and-tag@main
       with:
         version: ${{ steps.semantic.outputs.version }}
+        tag-message: ${{ steps.semantic.outputs.changelog }}
         git-add: changelog.md
         commit: true
         github-token: ${{ github.token }}
