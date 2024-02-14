@@ -7,14 +7,14 @@ repos:
 
     - id: ruff
       name: ruff
-      entry: ruff
+      entry: ruff --fix
       language: system
       types: [python]
       stages: [pre-commit]
 
     - id: ruff-format
       name: ruff format
-      entry: ruff format --diff
+      entry: ruff format
       language: system
       types: [python]
       stages: [pre-commit]
@@ -60,7 +60,7 @@ repos:
     - id: commit-msg
       name: conventional commit message
       language: pygrep
-      entry: '^(chore|test|feat|fix|build|docs|refactor)!?(\([a-z]+\))?: (?![A-Z])(?![a-z]+(ed|ing)\s).*$'
+      entry: '^(chore|test|feat|fix|build|docs|refactor)!?(\([a-z]+\))?: (?![A-Z][a-z])(?![a-z]+(ed|ing)\s).*$'
       args:
       - --multiline
       - --negate # fails if the entry is NOT matched

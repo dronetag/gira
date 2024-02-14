@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 from typing import Optional
 
 import jira
@@ -40,6 +41,27 @@ def extract_tickets(msg: str) -> list[Ticket]:
     return [Ticket(name) for name in extract_ticket_names(msg)]
 
 
+def _get_value(key: Optional[str]):
+    filename = ""
+    if not key:
+        return ""
+    elif key.startswith("file://"):
+        filename = key[7:]
+    elif key.startswith("file:"):
+        filename = key[5:]
+    elif key.startswith("env://"):
+        return os.environ.get(key[6:], "")
+    elif key.startswith("env:"):
+        return os.environ.get(key[4:], "")
+    else:
+        return key
+
+    p = Path(filename)
+    if not p.exists():
+        raise ValueError(f"File {p.absolute()} does not exist")
+    return p.read_text().strip()
+
+
 class Jira:
     url: str
     token: Optional[str]
@@ -50,16 +72,11 @@ class Jira:
 
     def __init__(self, url: str = "", token: str = "", email: str = "", **kwargs):
         self.url = url
-        self.token = token
-        self.email = email
+        self.token = _get_value(token)
+        self.email = _get_value(email)
         self.projects = []
         self._client = None
         self._connect_error = 0
-        if token and token.startswith("file:"):
-            with open(token[5:], "rt") as f:
-                self.token = f.read().strip()
-        elif token and token.startswith("env:"):
-            self.token = os.environ.get(token[4:], "")
 
     def connect(self):
         if self.url and self.email and self.token:

@@ -21,7 +21,7 @@ class Config:
     submodules: bool
 
     def __init__(self, jira, observe, submodules=True):
-        self.jira = jira
+        self.jira = Jira(**jira)
         self.observe = observe
         self.submodules = submodules
 
