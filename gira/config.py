@@ -10,18 +10,17 @@ from pathlib import Path
 import yaml
 
 from . import logger
-from .jira import Jira
 
 DEFAULT_CONFIG = Path(".gira.yaml")
 
 
 class Config:
-    jira: Jira
+    jira: dict[str, str]  # url, user, token
     observe: dict[str, str]  # name -> url
     submodules: bool
 
     def __init__(self, jira, observe, submodules=True):
-        self.jira = Jira(**jira)
+        self.jira = jira
         self.observe = observe
         self.submodules = submodules
 
@@ -63,15 +62,13 @@ def _pytoml(path: Path) -> Config:
 def _conf(path: Path) -> Config:
     """Parse watched dependencies by GIRA from .girarc"""
     parsed = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
-    return Config(jira=Jira(**_section(parsed, "jira")), observe=_section(parsed, "observe"))
+    return Config(jira=_section(parsed, "jira"), observe=_section(parsed, "observe"))
 
 
 def _generic_yaml(path: Path) -> Config:
     """Parse watched dependencies by GIRA from .girarc"""
     parsed = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
-    return Config(
-        jira=Jira(**_section(parsed, "gira.jira")), observe=_section(parsed, "gira.observe")
-    )
+    return Config(jira=_section(parsed, "gira.jira"), observe=_section(parsed, "gira.observe"))
 
 
 def _west(path: Path) -> Config:
@@ -79,7 +76,7 @@ def _west(path: Path) -> Config:
     jira = _section(parsed, "manifest.gira.jira")
     observe = _section(parsed, "manifest.gira.observe")
     return Config(
-        jira=Jira(**jira),
+        jira=jira,
         observe=observe,
     )
 

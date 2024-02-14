@@ -70,6 +70,7 @@ def gira(config: config.Config, stream: TextIO, format: str, ref: Optional[str])
             continue
 
         if fmt.needs_details:
-            fmt.print(upgrade, map(config.jira.get_ticket_details, sorted(tickets)))
+            jira_client = jira.Jira(**config.jira)
+            fmt.print(upgrade, map(jira_client.get_ticket_details, sorted(tickets)))
         else:
             fmt.print(upgrade, map(jira.Ticket, sorted(tickets)))
