@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -51,4 +52,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if os.getenv("CI") is not None:
+        print("Gira does not run in CI environments", file=sys.stderr)
+        sys.exit(0)
     sys.exit(main())
