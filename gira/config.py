@@ -47,7 +47,7 @@ def _parse_file(path: Path) -> Config:
     if path.name.endswith(".yaml"):
         return _generic_yaml(path)
     logger.warning("Running with empty configuration")
-    return Config(jira=Jira(), observe={})
+    return Config(jira={}, observe={})
 
 
 def _pytoml(path: Path) -> Config:
