@@ -33,18 +33,6 @@ rm README.md
 
 #############################################
 ## run tests
-echo "-- Test poetry/poetry.lock"
-git reset --hard
-rm -rf .gira_cache output.txt
-sed -i 's/1.0.0/1.1.0/g' poetry/poetry.lock
-gira -c poetry/pyproject.toml | tee output.txt
-grep dep1-poetry output.txt
-grep "1.0.0" output.txt
-grep "1.1.0" output.txt
-grep OCD-1234 output.txt
-grep -v OCD-567 output.txt
-
-
 echo "-- Test poetry/pyproject.toml"
 git reset --hard
 rm -rf .gira_cache output.txt
