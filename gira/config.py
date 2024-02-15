@@ -9,8 +9,6 @@ from pathlib import Path
 
 import yaml
 
-from . import logger
-
 DEFAULT_CONFIG = Path(".gira.yaml")
 
 
@@ -37,16 +35,18 @@ def from_file(path: Optional[Path]) -> Config:
 
 
 def _parse_file(path: Path) -> Config:
+    config = Config(jira={}, observe={})
     if path.name == ".gira.yaml":
-        return _conf(path)
+        config = _conf(path)
     if path.name == "pyproject.toml":
-        return _pytoml(path)
+        config = _pytoml(path)
     if path.name.startswith("west"):
-        return _west(path)
+        config = _west(path)
     if path.name.endswith(".yaml"):
-        return _generic_yaml(path)
-    logger.warning("Running with empty configuration")
-    return Config(jira={}, observe={})
+        config = _generic_yaml(path)
+    if not config.observe:
+        raise RuntimeError(f"No observed dependencies configured in {path}")
+    return config
 
 
 def _pytoml(path: Path) -> Config:
