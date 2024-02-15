@@ -41,20 +41,20 @@ def extract_tickets(msg: str) -> list[Ticket]:
     return [Ticket(name) for name in extract_ticket_names(msg)]
 
 
-def _get_value(key: Optional[str]):
+def _get_value(value: Optional[str]):
     filename = ""
-    if not key:
+    if not value:
         return ""
-    elif key.startswith("file://"):
-        filename = key[7:]
-    elif key.startswith("file:"):
-        filename = key[5:]
-    elif key.startswith("env://"):
-        return os.environ.get(key[6:], "")
-    elif key.startswith("env:"):
-        return os.environ.get(key[4:], "")
+    elif value.startswith("file://"):
+        filename = value[7:]
+    elif value.startswith("file:"):
+        filename = value[5:]
+    elif value.startswith("env://"):
+        return os.environ.get(value[6:], "")
+    elif value.startswith("env:"):
+        return os.environ.get(value[4:], "")
     else:
-        return key
+        return value
 
     p = Path(filename)
     if not p.exists():
@@ -77,13 +77,18 @@ class Jira:
         self.projects = []
         self._client = None
         self._connect_error = 0
+        if self.token and not self.url:
+            raise ValueError("Jira token provided without url")
 
     def connect(self):
         if self.url and self.email and self.token:
+            logger.debug(f"Jira connecting to {self.url} with email {self.email} and a token")
             self._client = jira.JIRA(self.url, basic_auth=(self.email, self.token))
         elif self.url and self.token:
+            logger.debug(f"Jira connecting to {self.url} with token")
             self._client = jira.JIRA(self.url, token_auth=self.token)
         else:
+            logger.debug("No Jira connection details provided")
             self._client = None
 
     def __str__(self):
