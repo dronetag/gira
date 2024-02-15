@@ -13,7 +13,7 @@ from pathlib import Path
 from . import logger
 
 version_re = re.compile(r"""([0-9]+\.[0-9]+[^"',]*)""")
-parseable_filenames = ("pyproject.toml", "poetry.lock", "pubspec.yaml", "west.yaml")
+parseable_filenames = ("pyproject.toml", "pubspec.yaml", "west.yaml")
 
 
 def parseable(filepath: Path) -> bool:
@@ -24,8 +24,6 @@ def parseable(filepath: Path) -> bool:
 def parse(path: Path, content: str, observed: dict[str, str]) -> dict[str, str]:
     if path.name == "pyproject.toml":
         return parse_pytoml(content, observed)
-    if path.name == "poetry.lock":
-        return parse_poetry_lock(content, observed)
     if path.name == "pubspec.yaml":
         return parse_pubspec_yaml(content, observed)
     if path.name == "west.yaml":
@@ -84,44 +82,6 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
             dependencies[dependency] = "v" + version_match.group(1)
 
     return dependencies
-
-
-def parse_poetry_lock(content: str, observed: dict[str, str]) -> dict[str, str]:
-    dependencies: dict[str, str] = {}
-    parsed = toml.loads(content)
-    if not parsed or "package" not in parsed:
-        logger.warning("poetry.lock is empty or does not contain dependencies")
-        return dependencies
-
-    for package in parsed["package"]:
-        if package["name"] not in observed:
-            continue
-        dependencies[package["name"]] = "v" + package["version"]
-
-    return dependencies
-
-
-def parse_package_lock(content: str, Set: set[str]) -> dict[str, str]:
-    """Extracts first-order dependencies from package-lock.json
-
-    Example:
-    {
-        "name": "frontend",
-        "version": "1.0.0",
-        "lockfileVersion": 2,
-        "requires": true,
-        "packages": {
-            "": {
-            "name": "frontend",
-            "version": "1.0.0",
-            "dependencies": {
-                "@date-io/date-fns": "^1.3.13",
-                "@emotion/react": "^11.9.0",
-                "@emotion/styled": "^11.8.1",
-                "@fontsource/roboto": "^4.2.3",
-                "@fontsource/titillium-web": "^4.5.8",
-    """
-    raise NotImplementedError("Not implemented parsing dependencies from package.json")
 
 
 def parse_pubspec_yaml(content: str, observed: dict[str, str]) -> dict[str, str]:
