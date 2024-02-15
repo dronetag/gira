@@ -10,6 +10,8 @@ else:
     import tomli as toml
 from pathlib import Path
 
+from . import logger
+
 version_re = re.compile(r"""([0-9]+\.[0-9]+[^"',]*)""")
 parseable_filenames = ("pyproject.toml", "poetry.lock", "pubspec.yaml", "west.yaml")
 
@@ -87,6 +89,9 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
 def parse_poetry_lock(content: str, observed: dict[str, str]) -> dict[str, str]:
     dependencies: dict[str, str] = {}
     parsed = toml.loads(content)
+    if not parsed or "package" not in parsed:
+        logger.warning("poetry.lock is empty or does not contain dependencies")
+        return dependencies
 
     for package in parsed["package"]:
         if package["name"] not in observed:
@@ -142,6 +147,9 @@ def parse_pubspec_yaml(content: str, observed: dict[str, str]) -> dict[str, str]
     """
     dependencies: dict[str, str] = {}
     parsed = yaml.load(content, Loader=yaml.SafeLoader)
+    if not parsed or "dependencies" not in parsed:
+        logger.warning("pubspec.yaml is empty or does not contain dependencies")
+        return dependencies
 
     for dependency, value in parsed["dependencies"].items():
         if dependency not in observed:
@@ -188,8 +196,11 @@ def parse_west_yaml(content: str, observed: dict[str, str]) -> dict[str, str]:
     """
     dependencies: dict[str, str] = {}
     parsed = yaml.load(content, Loader=yaml.SafeLoader)
-    projects: list[dict] = _section(parsed, "manifest.projects")
+    if not parsed or "manifest" not in parsed:
+        logger.warning("west.yaml is empty or does not contain dependencies")
+        return dependencies
 
+    projects: list[dict] = _section(parsed, "manifest.projects")
     for project in projects:
         dependency = project["name"]
         if dependency not in observed:

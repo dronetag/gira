@@ -28,6 +28,9 @@ class Repo:
             raise RuntimeError(f"Revision {e.args[0]} does not exist")
         self._submodules = None
 
+    def __str__(self) -> str:
+        return f"{self.path}:{self.ref or 'HEAD'}" + ("#cached" if self._diff_cached else "")
+
     @property
     def has_submodules(self) -> bool:
         """Check if repository has submodules"""
@@ -43,7 +46,7 @@ class Repo:
     def changed_files(self) -> list[Path]:
         """List changed filenames in the repository since `self.ref` revision"""
         try:
-            diffs = self.repo.diff(self.ref, context_lines=0)
+            diffs = self.repo.diff(self.ref, cached=self._diff_cached, context_lines=0)
         except KeyError:
             if self.ref == "HEAD":
                 raise AlrightException("Git first commit")
@@ -86,8 +89,12 @@ class Repo:
             commit = self.repo[self.ref]
         else:
             commit = self.repo.references.get(self.ref).peel(pygit2.Commit)
-        blob = self.repo[commit.tree[path.as_posix()].id]
-        return blob.data.decode("utf-8")
+        try:
+            blob = self.repo[commit.tree[path.as_posix()].id]
+            return blob.data.decode("utf-8")
+        except KeyError:
+            logger.warning(f"{path} cannot be found in old revision")
+            return ""
 
     def _check_ref(self, ref: Optional[str]):
         """Set ref to HEAD if there are any changes, otherwise to HEAD^ (only if empty)"""
@@ -101,10 +108,10 @@ class Repo:
                 return "refs/tags/" + ref
             except KeyError:
                 return "refs/heads/" + ref
-        if self.repo and len(self.repo.diff("HEAD")) > 0:
-            return "HEAD"
         if self.repo and len(self.repo.diff("HEAD", cached=True)) > 0:
             self._diff_cached = True
+            return "HEAD"
+        if self.repo and len(self.repo.diff("HEAD")) > 0:
             return "HEAD"
         return "HEAD"
 
