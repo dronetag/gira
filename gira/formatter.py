@@ -35,8 +35,8 @@ class CommitFormatter(Formatter):
         for ticket in tickets:
             if chars > 72:
                 chars += self._stream.write(sep.strip())
-                self._stream.write("\n")
-                sep = "    "  # indent more at new line
+                self._stream.write("\n    ")
+                sep = ""  # no separator after newline
                 chars = 0
             else:
                 chars += self._stream.write(sep)
