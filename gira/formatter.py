@@ -31,7 +31,7 @@ class CommitFormatter(Formatter):
         chars = 0
         sep = " "
         self._stream.write("\n")
-        chars += self._stream.write(str(upgrade))
+        chars += self._stream.write(f"Dep-Change: {upgrade}")
         for ticket in tickets:
             if chars > 72:
                 chars += self._stream.write(sep.strip())
@@ -56,9 +56,9 @@ class DetailFormatter(Formatter):
             if ticket is None:
                 continue
             if not ticket.summary:
-                self._stream.write(f"{ticket.name}: {ticket.url}\n")
+                self._stream.write(f"  {ticket.name}: {ticket.url}\n")
             else:
-                self._stream.write(f"{ticket.name}: {ticket.summary} ({ticket.url})\n")
+                self._stream.write(f"  {ticket.name}: {ticket.summary} ({ticket.url})\n")
 
 
 class MarkdownFormatter(Formatter):
