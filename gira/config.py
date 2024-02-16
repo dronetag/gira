@@ -38,11 +38,11 @@ def _parse_file(path: Path) -> Config:
     config = Config(jira={}, observe={})
     if path.name == ".gira.yaml":
         config = _conf(path)
-    if path.name == "pyproject.toml":
+    elif path.name == "pyproject.toml":
         config = _pytoml(path)
-    if path.name.startswith("west"):
+    elif path.name.startswith("west"):
         config = _west(path)
-    if path.name.endswith(".yaml"):
+    elif path.name.endswith(".yaml"):
         config = _generic_yaml(path)
     if not config.observe:
         raise RuntimeError(f"No observed dependencies configured in {path}")
