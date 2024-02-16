@@ -12,6 +12,10 @@ import yaml
 DEFAULT_CONFIG = Path(".gira.yaml")
 
 
+class ConfigError(Exception):
+    pass
+
+
 class Config:
     jira: dict[str, str]  # url, user, token
     observe: dict[str, str]  # name -> url

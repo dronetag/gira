@@ -7,6 +7,7 @@ import jira
 from jira import JIRAError
 
 from . import logger
+from .config import ConfigError
 
 _ = JIRAError
 _ticket_re = re.compile(r"(?P<ticket>[A-Z]+-\d+)")
@@ -56,7 +57,9 @@ def _get_value(value: Optional[str]):
     else:
         return value
 
-    p = Path(filename)
+    if "$HOME/" in filename:  # because $HOME won't be expanded correctly on Windows
+        filename = filename.replace("$HOME/", "~/")
+    p = Path(os.path.expandvars(os.path.expanduser(filename)))
     if not p.exists():
         raise ValueError(f"File {p.absolute()} does not exist")
     return p.read_text().strip()
@@ -78,7 +81,7 @@ class Jira:
         self._client = None
         self._connect_error = 0
         if self.token and not self.url:
-            raise ValueError("Jira token provided without url")
+            raise ConfigError("jira.token provided without jira.url")
 
     def connect(self):
         if self.url and self.email and self.token:
