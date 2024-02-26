@@ -1,3 +1,9 @@
+## 1.0.1 (https://github.com/dronetag/gira/compare/v1.0.0...v1.0.1) (2024-2-26)
+
+### Bug Fixes
+
+    * support both YAML extensions: .yml and .yaml 5843727
+
 # 1.0.0 (https://github.com/dronetag/gira/compare/v0.10.0...v1.0.0) (2024-2-16)
 
 ### Bug Fixes
