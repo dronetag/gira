@@ -14,6 +14,6 @@ manifest:
     revision: v1.0.0
     import: true
 
-  gira:
-   observe:
-     dep1-west: "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
+gira:
+  observe:
+    dep1-west: "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
