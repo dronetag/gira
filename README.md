@@ -3,15 +3,15 @@
 Gira reacts to changes in your dependency files and bring you JIRA tickets mentioned in commits between current and updated version of the dependencies. Supported dependency files are
 
 - pyproject.toml
-- west.yaml
-- pubspec.yaml
+- west.yaml/yml
+- pubspec.yaml/yml
 
 Gira is especially usefull with [pre-commit](https://pre-commit.com) but is great for changelog enhancements when called as `gira --format markdown -r <previousTag>`
 
 __Pssst__: works the best if your dependencies follow [semantic release](https://semantic-release.gitbook.io/semantic-release/) thus have tags in `vX.Y.*` format.
 
 
-## Usage
+## Usage - standalone
 
 ```bash
 gira [-r revision] [-c config] [--format="commit|detail|markdown"]
@@ -30,13 +30,18 @@ other-followed-lib <versionB> => <versionB>: JIRA-876, JIRA-543
 
 Config file is by default _.gira.yaml_ but can be pretty much any YAML or pyproject.toml. See section bellow.
 
-## Pre-commit
+## Usage - Pre-commit
+
+```bash
+$ pip install pre-commit
+$ pre-commit install -t prepare-commit-msg -t pre-commit -t commit-msg
+```
 
 Add to your .pre-commit-config.yaml
 
 ```yaml
   - repo: https://github.com/dronetag/gira
-    rev: v1.0.0
+    rev: v1.0.1
     hooks:
     - id: gira
       # if you use other config than .gira.yaml then

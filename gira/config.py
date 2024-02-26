@@ -44,9 +44,7 @@ def _parse_file(path: Path) -> Config:
         config = _conf(path)
     elif path.name == "pyproject.toml":
         config = _pytoml(path)
-    elif path.name.startswith("west"):
-        config = _west(path)
-    elif path.name.endswith(".yaml"):
+    elif path.suffix in (".yaml", ".yml"):
         config = _generic_yaml(path)
     if not config.observe:
         raise RuntimeError(f"No observed dependencies configured in {path}")
@@ -73,16 +71,6 @@ def _generic_yaml(path: Path) -> Config:
     """Parse watched dependencies by GIRA from .girarc"""
     parsed = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
     return Config(jira=_section(parsed, "gira.jira"), observe=_section(parsed, "gira.observe"))
-
-
-def _west(path: Path) -> Config:
-    parsed = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
-    jira = _section(parsed, "manifest.gira.jira")
-    observe = _section(parsed, "manifest.gira.observe")
-    return Config(
-        jira=jira,
-        observe=observe,
-    )
 
 
 def _section(d: Optional[dict], path: str) -> dict:

@@ -13,7 +13,7 @@ from pathlib import Path
 from . import logger
 
 version_re = re.compile(r"""([0-9]+\.[0-9]+[^"',]*)""")
-parseable_filenames = ("pyproject.toml", "pubspec.yaml", "west.yaml")
+parseable_filenames = ("pyproject.toml", "pubspec.yaml", "pubspec.yml", "west.yaml", "west.yml")
 
 
 def parseable(filepath: Path) -> bool:
@@ -24,9 +24,9 @@ def parseable(filepath: Path) -> bool:
 def parse(path: Path, content: str, observed: dict[str, str]) -> dict[str, str]:
     if path.name == "pyproject.toml":
         return parse_pytoml(content, observed)
-    if path.name == "pubspec.yaml":
+    if path.name in ("pubspec.yaml", "pubspec.yml"):
         return parse_pubspec_yaml(content, observed)
-    if path.name == "west.yaml":
+    if path.name in ("west.yaml", "west.yml"):
         return parse_west_yaml(content, observed)
     raise NotImplementedError(f"No dependency parser for {path.name}")
 
