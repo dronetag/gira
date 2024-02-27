@@ -53,9 +53,16 @@ def gira(config: config.Config, stream: TextIO, format: str, ref: Optional[str])
     for upgrade in upgrades:
         if upgrade.messages is None:
             url = config.observe[upgrade.name]  # this might return an object with more information
-            upgrade.messages = cache.cache(upgrade.name, url).messages(
-                upgrade.old_version, upgrade.new_version
-            )
+            try:
+                upgrade.messages = cache.cache(upgrade.name, url).messages(
+                    upgrade.old_version, upgrade.new_version
+                )
+            except KeyError as e:
+                logger.error(
+                    f"Repository {upgrade.name} does not contain {e.args[0]}."
+                    " Might have been deleted locally or remotely. Skipping"
+                )
+                continue
         logger.debug(
             f"Messages for {upgrade.name} between {upgrade.new_version} and"
             f" {upgrade.old_version}: {upgrade.messages}"

@@ -122,9 +122,7 @@ class Repo:
         """
         logger.debug(f"Getting messages between {a} and {b or self.ref} for {self.path.name}")
         past_commit = self.repo.revparse_single(a)
-        current_commit = (
-            self.repo.revparse_single(self.ref) if b is None else self.repo.revparse_single(b)
-        )
+        current_commit = self.repo.revparse_single(self.ref if b is None else b)
 
         if not isinstance(past_commit, pygit2.Commit):
             past_commit = past_commit.peel(pygit2.Commit)

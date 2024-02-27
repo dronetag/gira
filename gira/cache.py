@@ -34,12 +34,3 @@ def cache(name: str, url: str) -> pygit2.Repository:
             ["git", "fetch", "origin"], cwd=str(repo_dir), check=True, capture_output=True
         )
     return repo.Repo(repo_dir, ref="HEAD", bare=True)
-
-
-def messages(name: str, url: str, a: str, b: str) -> list[str]:
-    """Return commit messages between two revisions a and b for cached git repository
-
-    @deprecated use cache() and repo.messages() instead.
-    """
-    repo = cache(name, url)
-    return repo.messages(a, b)
