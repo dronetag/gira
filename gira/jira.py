@@ -71,7 +71,7 @@ class Jira:
     email: Optional[str]
     projects: list[str]
 
-    _client = None
+    _client: Optional[jira.JIRA]
 
     def __init__(self, url: str = "", token: str = "", email: str = "", **kwargs):
         self.url = url
@@ -107,8 +107,10 @@ class Jira:
         if self._client is None and self._connect_error == 0:
             try:
                 self.connect()
-            except Exception as e:
-                logger.warn(f"Could not connect to Jira: {type(e)}: {e}")
+            except jira.exceptions.JIRAError as e:
+                if e.status_code == 401:
+                    raise ConfigError("Invalid Jira credentials")
+                logger.warn(f"Jira connection error: {e.status_code} - {e.text[:50]}...")
                 self._connect_error += 1
 
         if self._client is not None:
