@@ -31,9 +31,17 @@ class CommitFormatter(Formatter):
         chars = 0
         sep = " "
         self._stream.write("\n")
-        chars += self._stream.write(f"Dep-Change: {upgrade}")
+        chars += self._stream.write(f"Dep-Change: {upgrade.name} ")
+        if chars > 70:
+            chars = self._stream.write("\n    ")
+
+        def _s(s):  # shorten
+            return s[:7] if s and len(s) > 10 else s
+
+        chars += self._stream.write(f"({_s(upgrade.old_version)} -> {_s(upgrade.new_version)})")
+
         for ticket in tickets:
-            if chars > 72:
+            if chars + len(ticket.name) > 70:
                 chars += self._stream.write(sep.strip())
                 self._stream.write("\n    ")
                 chars = 0
