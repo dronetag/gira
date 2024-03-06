@@ -36,11 +36,10 @@ class CommitFormatter(Formatter):
             if chars > 72:
                 chars += self._stream.write(sep.strip())
                 self._stream.write("\n    ")
-                sep = ""  # no separator after newline
                 chars = 0
-            else:
-                chars += self._stream.write(sep)
-                sep = ", "
+                sep = ""  # no separator after newline
+            chars += self._stream.write(sep)
+            sep = ", "
             chars += self._stream.write(ticket.name)
 
 
