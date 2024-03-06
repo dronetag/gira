@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gira"
-version = "1.0.3"
+version = "1.0.4"
 requires-python = ">=3.8"
 description = "GIRA places JIRA tickets from your dependencies into your commit message"
 readme = "README.md"

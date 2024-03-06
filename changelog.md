@@ -1,3 +1,10 @@
+## 1.0.4 (https://github.com/dronetag/gira/compare/v1.0.3...v1.0.4) (2024-3-6)
+
+### Bug Fixes
+
+    * better handling JIRA auth error 069a63c
+    * make sure that commit format is under 72 chars 6a5dc8d
+
 ## 1.0.3 (https://github.com/dronetag/gira/compare/v1.0.2...v1.0.3) (2024-3-6)
 
 ### Bug Fixes
