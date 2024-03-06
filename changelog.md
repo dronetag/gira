@@ -1,3 +1,9 @@
+## 1.0.3 (https://github.com/dronetag/gira/compare/v1.0.2...v1.0.3) (2024-3-6)
+
+### Bug Fixes
+
+    * commit-formatter newline bug d937776
+
 ## 1.0.2 (https://github.com/dronetag/gira/compare/v1.0.1...v1.0.2) (2024-2-27)
 
 ### Bug Fixes
