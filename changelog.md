@@ -1,3 +1,9 @@
+## 1.0.5 (https://github.com/dronetag/gira/compare/v1.0.4...v1.0.5) (2024-05-02)
+
+### Bug Fixes
+
+    * exclude last commit for ticket extraction 0e43750
+
 ## 1.0.4 (https://github.com/dronetag/gira/compare/v1.0.3...v1.0.4) (2024-3-6)
 
 ### Bug Fixes
