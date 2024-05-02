@@ -35,7 +35,13 @@ class Upgrade:
     new_version: Optional[str]
     messages: Optional[list[str]]
 
-    def __init__(self, name, old_version=None, new_version=None, messages=None):
+    def __init__(
+        self,
+        name: str,
+        old_version: Optional[str] = None,
+        new_version: Optional[str] = None,
+        messages=None,
+    ):
         self.name = name
         self.old_version = old_version
         self.new_version = new_version

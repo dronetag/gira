@@ -1,4 +1,5 @@
-from typing import Iterable, TextIO
+from abc import ABC
+from typing import Iterable, Optional, TextIO
 
 from .core import Upgrade
 from .jira import Ticket
@@ -14,20 +15,20 @@ def get_formatter(name: str, stream: TextIO):
     raise ValueError(f"Unknown format {name}")
 
 
-class Formatter:
+class Formatter(ABC):
     needs_details: bool
 
     def __init__(self, stream: TextIO):
         self._stream = stream
 
-    def print(self, upgrade: Upgrade, tickets: Iterable[Ticket]):
-        raise NotImplementedError()
+    def print(self, upgrade: Upgrade, tickets: Iterable[Ticket]) -> None:
+        """Write textual representation of the upgrade and tickets to the internal stream."""
 
 
 class CommitFormatter(Formatter):
     needs_details = False
 
-    def print(self, upgrade: Upgrade, tickets: Iterable[Ticket]):
+    def print(self, upgrade: Upgrade, tickets: Iterable[Ticket]) -> None:
         chars = 0
         sep = " "
         self._stream.write("\n")
@@ -35,7 +36,7 @@ class CommitFormatter(Formatter):
         if chars > 70:
             chars = self._stream.write("\n    ")
 
-        def _s(s):  # shorten
+        def _s(s: Optional[str]) -> Optional[str]:  # shorten
             return s[:7] if s and len(s) > 10 else s
 
         chars += self._stream.write(f"({_s(upgrade.old_version)} -> {_s(upgrade.new_version)})")

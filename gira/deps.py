@@ -1,4 +1,5 @@
-"""Dependencies module reads different """
+"""Dependencies module reads different"""
+
 import re
 import sys
 
@@ -13,12 +14,12 @@ from pathlib import Path
 from . import logger
 
 version_re = re.compile(r"""([0-9]+\.[0-9]+[^"',]*)""")
-parseable_filenames = ("pyproject.toml", "pubspec.yaml", "pubspec.yml", "west.yaml", "west.yml")
+parsable_filenames = ("pyproject.toml", "pubspec.yaml", "pubspec.yml", "west.yaml", "west.yml")
 
 
-def parseable(filepath: Path) -> bool:
+def parsable(filepath: Path) -> bool:
     """Extract changes in observed dependencies from dependency/lock files diffs"""
-    return filepath.name in parseable_filenames
+    return filepath.name in parsable_filenames
 
 
 def parse(path: Path, content: str, observed: dict[str, str]) -> dict[str, str]:
@@ -36,7 +37,7 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
     parsed = toml.loads(content)
 
     if _section(parsed, "project.dependencies"):
-        """Parse standart pytoml dependencies definition
+        """Parse standard pytoml dependencies definition
 
         Example:
             [project]

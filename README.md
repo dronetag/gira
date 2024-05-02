@@ -6,7 +6,7 @@ Gira reacts to changes in your dependency files and bring you JIRA tickets menti
 - west.yaml/yml
 - pubspec.yaml/yml
 
-Gira is especially usefull with [pre-commit](https://pre-commit.com) but is great for changelog enhancements when called as `gira --format markdown -r <previousTag>`
+Gira is especially useful with [pre-commit](https://pre-commit.com) but is great for changelog enhancements when called as `gira --format markdown -r <previousTag>`
 
 __Pssst__: works the best if your dependencies follow [semantic release](https://semantic-release.gitbook.io/semantic-release/) thus have tags in `vX.Y.*` format.
 
@@ -24,8 +24,8 @@ commit messages. The markdown version is intended for changelogs.
 
 ```bash
 $ gira [--format=commit]
-internal-dependency1 <versionB> => <versionB>: JIRA-123, JIRA-567
-other-followed-lib <versionB> => <versionB>: JIRA-876, JIRA-543
+internal-dependency1 <versionA> => <versionB>: JIRA-123, JIRA-567
+other-followed-lib <versionA> => <versionB>: JIRA-876, JIRA-543
 ```
 
 Config file is by default _.gira.yaml_ but can be pretty much any YAML or pyproject.toml. See section bellow.
@@ -94,7 +94,7 @@ as follows:
 
 ```bash
 $ gira
-internal-dependency1 <versionB> => <versionB>:
+internal-dependency1 <versionA> => <versionB>:
   JIRA-123: details about the issue (url)
   JIRA-567: details about the issue (url)
 ```

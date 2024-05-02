@@ -22,7 +22,7 @@ class Ticket:
     url: str
     summary: str
 
-    def __init__(self, name, url="", summary=""):
+    def __init__(self, name: str, url: str = "", summary: str = ""):
         self.name = name
         self.url = url
         self.summary = summary
