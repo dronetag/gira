@@ -136,10 +136,12 @@ class Repo:
         commits = self.repo.walk(current_commit.oid)
         messages = []
         for i, commit in enumerate(commits):
-            messages.append(commit.message.strip())
             if commit.oid.hex == past_commit.oid.hex:
                 break
             if i >= Repo.MESSAGE_LIMIT:
                 logger.warning(f"Reached limit {Repo.MESSAGE_LIMIT} commits for {self.path.name}")
                 break
+            # append only when no end-condition was met - we don't want the last message because
+            # our interval is exclusive
+            messages.append(commit.message.strip())
         return messages
