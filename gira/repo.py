@@ -115,7 +115,7 @@ class Repo:
             return "HEAD"
         return "HEAD"
 
-    def messages(self, a: str, b: Optional[str] = None):
+    def messages(self, a: str, b: Optional[str] = None) -> list[str]:
         """Get messages between two revisions a and b (in reverse chronological order)
 
         @throws KeyError in case of invalid references
@@ -134,7 +134,7 @@ class Repo:
             return []
 
         commits = self.repo.walk(current_commit.oid)
-        messages = []
+        messages: list[str] = []
         for i, commit in enumerate(commits):
             if commit.oid.hex == past_commit.oid.hex:
                 break
