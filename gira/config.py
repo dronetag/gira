@@ -1,15 +1,19 @@
 import sys
 from typing import Optional
 
+import yaml
+
 if sys.version_info >= (3, 11):
     import tomllib as toml
 else:
     import tomli as toml
 from pathlib import Path
 
-import yaml
+from gira import logger
 
 DEFAULT_CONFIG = Path(".gira.yaml")
+
+logger = logger.getChild("config")
 
 
 class ConfigError(Exception):
@@ -21,7 +25,7 @@ class Config:
     observe: dict[str, str]  # name -> url
     submodules: bool
 
-    def __init__(self, jira, observe, submodules=True):
+    def __init__(self, jira: dict[str, str], observe: dict[str, str], submodules: bool = True):
         self.jira = jira
         self.observe = observe
         self.submodules = submodules
@@ -47,7 +51,9 @@ def _parse_file(path: Path) -> Config:
     elif path.suffix in (".yaml", ".yml"):
         config = _generic_yaml(path)
     if not config.observe:
-        raise RuntimeError(f"No observed dependencies configured in {path}")
+        if not config.submodules:
+            raise ConfigError("No observed dependencies and no submodules {path}")
+        logger.warn(f"No observed dependencies in {path} - will watch only submodules")
     return config
 
 
@@ -68,7 +74,7 @@ def _conf(path: Path) -> Config:
 
 
 def _generic_yaml(path: Path) -> Config:
-    """Parse watched dependencies by GIRA from .girarc"""
+    """Parse watched dependencies by GIRA from generic YAML"""
     parsed = yaml.load(path.read_text(), Loader=yaml.SafeLoader)
     return Config(jira=_section(parsed, "gira.jira"), observe=_section(parsed, "gira.observe"))
 
