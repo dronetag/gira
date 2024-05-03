@@ -1,3 +1,9 @@
+## 1.0.6 (https://github.com/dronetag/gira/compare/v1.0.5...v1.0.6) (2024-05-03)
+
+### Bug Fixes
+
+    * allow empty observed conf when submodules on e8c9c05
+
 ## 1.0.5 (https://github.com/dronetag/gira/compare/v1.0.4...v1.0.5) (2024-05-02)
 
 ### Bug Fixes
