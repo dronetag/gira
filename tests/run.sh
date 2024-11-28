@@ -37,7 +37,7 @@ echo "-- Test poetry/pyproject.toml"
 git reset --hard
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.1/g' poetry/pyproject.toml
-gira -c poetry/pyproject.toml > output.txt
+gira -c  poetry/pyproject.toml -v > output.txt
 grep dep1-poetry output.txt
 grep "1.0.0" output.txt
 grep "1.1.1" output.txt

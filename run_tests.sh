@@ -2,9 +2,9 @@
 set -e
 
 # make sure the binaries are available
-which git
-which envsubst
-which gira
+which git || (echo "ERROR: git not found" && exit 1)
+which envsubst || (echo "ERROR: envsubst not found" && exit 1)
+which gira || (echo "ERROR: gira not found" && exit 1)
 
 cd tests
 if bash run.sh > /dev/null; then
