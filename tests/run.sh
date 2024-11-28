@@ -16,6 +16,7 @@ envsubst < local-template/poetry/poetry.lock > local/poetry/poetry.lock
 envsubst < local-template/pyproject.toml > local/pyproject.toml
 envsubst < local-template/pubspec.yaml > local/pubspec.yaml
 envsubst < local-template/west.yml > local/west.yml
+envsubst < local-template/west.yml > local/west-SOMETHING.yaml
 envsubst < local-template/.gira.yaml > local/.gira.yaml
 
 
@@ -72,6 +73,16 @@ git reset --hard
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.0/g' west.yml
 gira -c west.yml > output.txt
+grep dep1-west output.txt
+grep OCD-1234 output.txt
+grep -v OCD-567 output.txt
+
+
+echo "-- Test west-SOMETHING.yaml"
+git reset --hard
+rm -rf .gira_cache output.txt
+sed -i 's/1.0.0/1.1.0/g' west-SOMETHING.yaml
+gira -c west-SOMETHING.yaml > output.txt
 grep dep1-west output.txt
 grep OCD-1234 output.txt
 grep -v OCD-567 output.txt
