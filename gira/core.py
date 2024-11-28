@@ -27,7 +27,7 @@ class Upgrade:
     name: str
     old_version: Optional[str] = None
     new_version: Optional[str] = None
-    messages: list[str] = field(default_factory=list)
+    messages: Optional[list[str]] = None
 
     def __str__(self):
         return f"{self.name} {self.old_version} => {self.new_version}:"
