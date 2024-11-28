@@ -28,7 +28,7 @@ def main() -> int:
 
     logger.debug(f"Arguments: {args}")
     try:
-        conf = config_parser.from_file(Path(args.config) if args.config else None)
+        conf = config_parser.from_file(Path(args.config).resolve() if args.config else None)
         if not conf.observe and not conf.submodules:
             logger.error("No observed dependencies found in gira configuration file")
             return 1

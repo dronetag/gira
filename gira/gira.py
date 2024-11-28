@@ -17,8 +17,10 @@ def gira(config: config.Config, stream: TextIO, format: str, ref: Optional[str])
 
     # extract changes from diffs of locks or other dependency specifying files
     upgrades: list[core.Upgrade] = []
-    for file in filter(deps.parsable, files):
+    for file in files:
         logger.debug(f"Processing {file} for dependencies")
+        if not deps.is_parsable(file):
+            continue
         pre = deps.parse(file, repository.get_old_content(file), config.observe)
         post = deps.parse(file, repository.get_current_content(file), config.observe)
         for dep_name in pre.keys():

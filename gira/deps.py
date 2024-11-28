@@ -2,6 +2,7 @@
 
 import re
 import sys
+from typing import Any
 
 import yaml
 
@@ -14,20 +15,27 @@ from pathlib import Path
 from . import logger
 
 version_re = re.compile(r"""([0-9]+\.[0-9]+[^"',]*)""")
-parsable_filenames = ("pyproject.toml", "pubspec.yaml", "pubspec.yml", "west.yaml", "west.yml")
+
+PYTOML_FILENAME = "pyproject.toml"
+PUBSPEC_PATTERN = re.compile(r"pubspec.*\.ya?ml")
+WEST_PATTERN = re.compile(r"west.*\.ya?ml")
 
 
-def parsable(filepath: Path) -> bool:
+def is_parsable(filepath: Path) -> bool:
     """Extract changes in observed dependencies from dependency/lock files diffs"""
-    return filepath.name in parsable_filenames
+    return (
+        filepath.name == PYTOML_FILENAME
+        or PUBSPEC_PATTERN.match(filepath.name) is not None
+        or WEST_PATTERN.match(filepath.name) is not None
+    )
 
 
 def parse(path: Path, content: str, observed: dict[str, str]) -> dict[str, str]:
-    if path.name == "pyproject.toml":
+    if path.name == PYTOML_FILENAME:
         return parse_pytoml(content, observed)
-    if path.name in ("pubspec.yaml", "pubspec.yml"):
+    if PUBSPEC_PATTERN.match(path.name) is not None:
         return parse_pubspec_yaml(content, observed)
-    if path.name in ("west.yaml", "west.yml"):
+    if WEST_PATTERN.match(path.name) is not None:
         return parse_west_yaml(content, observed)
     raise NotImplementedError(f"No dependency parser for {path.name}")
 
@@ -158,10 +166,10 @@ def parse_west_yaml(content: str, observed: dict[str, str]) -> dict[str, str]:
     dependencies: dict[str, str] = {}
     parsed = yaml.load(content, Loader=yaml.SafeLoader)
     if not parsed or "manifest" not in parsed:
-        logger.warning("west.yaml is empty or does not contain dependencies")
+        logger.warning("WEST is empty or does not contain dependencies")
         return dependencies
 
-    projects: list[dict] = _section(parsed, "manifest.projects")
+    projects: list[dict[str, Any]] = _section(parsed, "manifest.projects")
     for project in projects:
         dependency = project["name"]
         if dependency not in observed:
@@ -176,7 +184,11 @@ def parse_west_yaml(content: str, observed: dict[str, str]) -> dict[str, str]:
     return dependencies
 
 
-def _section(d, path):
+def _section(d: dict[str, Any], path: str) -> Any:
+    """Find a deeply nested section of a dict
+
+    :return: empty dict if subsection was not found
+    """
     for key in path.split("."):
         if key not in d:
             return {}
