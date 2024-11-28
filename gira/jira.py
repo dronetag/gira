@@ -1,9 +1,10 @@
 import os
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
-import jira
+from jira import JIRA as JIRAClient
 from jira import JIRAError
 
 from . import logger
@@ -17,15 +18,11 @@ def extract_ticket_names(msg: str) -> list[str]:
     return _ticket_re.findall(msg)
 
 
+@dataclass(unsafe_hash=True)
 class Ticket:
     name: str
-    url: str
-    summary: str
-
-    def __init__(self, name: str, url: str = "", summary: str = ""):
-        self.name = name
-        self.url = url
-        self.summary = summary
+    url: str = field(default="", compare=False, hash=False)
+    summary: str = field(default="", compare=False, hash=False)
 
     def __str__(self) -> str:
         if self.summary:
@@ -33,9 +30,6 @@ class Ticket:
         if self.url:
             return f"{self.name}: {self.url}"
         return self.name
-
-    def __hash__(self) -> int:
-        return hash(self.name)
 
 
 def extract_tickets(msg: str) -> list[Ticket]:
@@ -71,9 +65,9 @@ class Jira:
     email: Optional[str]
     projects: list[str]
 
-    _client: Optional[jira.JIRA]
+    _client: Optional[JIRAClient]
 
-    def __init__(self, url: str = "", token: str = "", email: str = "", **kwargs):
+    def __init__(self, url: str = "", token: str = "", email: str = "", **_: Any):
         self.url = url
         self.token = _get_value(token)
         self.email = _get_value(email)
@@ -86,10 +80,10 @@ class Jira:
     def connect(self):
         if self.url and self.email and self.token:
             logger.debug(f"Jira connecting to {self.url} with email {self.email} and a token")
-            self._client = jira.JIRA(self.url, basic_auth=(self.email, self.token))
+            self._client = JIRAClient(self.url, basic_auth=(self.email, self.token))
         elif self.url and self.token:
             logger.debug(f"Jira connecting to {self.url} with token")
-            self._client = jira.JIRA(self.url, token_auth=self.token)
+            self._client = JIRAClient(self.url, token_auth=self.token)
         else:
             logger.debug("No Jira connection details provided")
             self._client = None
@@ -107,17 +101,17 @@ class Jira:
         if self._client is None and self._connect_error == 0:
             try:
                 self.connect()
-            except jira.exceptions.JIRAError as e:
+            except JIRAError as e:
                 if e.status_code == 401:
                     raise ConfigError("Invalid Jira credentials")
-                logger.warn(f"Jira connection error: {e.status_code} - {e.text[:50]}...")
+                logger.warning(f"Jira connection error: {e.status_code} - {e.text[:50]}...")
                 self._connect_error += 1
 
         if self._client is not None:
             try:
                 ticket.summary = self._client.issue(ticket.name, fields="summary").fields.summary
-            except jira.JIRAError as e:
-                logger.warn(f"{ticket.name}: {e.text} ({e.status_code})")
+            except JIRAError as e:
+                logger.warning(f"{ticket.name}: {e.text} ({e.status_code})")
                 logger.debug(str(e))
                 return None
 
