@@ -42,7 +42,7 @@ class CommitFormatter(Formatter):
         chars += self._stream.write(f"({_s(upgrade.old_version)} -> {_s(upgrade.new_version)})")
 
         for ticket in tickets:
-            if chars + len(ticket.name) > 70:
+            if chars + len(ticket.name) >= 70:
                 chars += self._stream.write(sep.strip())
                 chars = self._stream.write("\n    ") - 1
                 sep = ""  # no separator after newline
