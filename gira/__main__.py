@@ -12,7 +12,13 @@ from . import config as config_parser
 def main() -> int:
     """Prepare gira to run with arguments from command line. Return exit code."""
     parser = argparse.ArgumentParser(description="Gira - Git Dependencies Analyzer")
-    parser.add_argument("-r", "--ref", type=str)
+    parser.add_argument(
+        "-r",
+        "--ref",
+        type=str,
+        help="Diff to specific commit hash/branch/tag. "
+        "Otherwise staged/unstaged or last commit is used",
+    )
     parser.add_argument("-c", "--config", type=str)
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument(
