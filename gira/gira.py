@@ -1,10 +1,24 @@
+import re
 from pathlib import Path
 from typing import Optional, TextIO
+
+from packaging.version import Version
 
 from . import cache, config, core, deps, formatter, jira, logger, repo
 
 
-def gira(config: config.Config, stream: TextIO, format: str, ref: Optional[str]):
+def compare_versions(version_a: str, version_b: str) -> tuple[str, str]:
+    """Return (lower, higher) versions from given version_a and version_b"""
+    try:
+        va = Version(version_a)
+        vb = Version(version_b)
+        if va > vb:
+            return (version_b, version_a)
+        return (version_a, version_b)
+    except Exception as e:
+        logger.warning(str(e))
+        return ("", "")
+
     """Main function of gira"""
     fmt = formatter.get_formatter(format, stream)
 
@@ -31,7 +45,35 @@ def gira(config: config.Config, stream: TextIO, format: str, ref: Optional[str])
                     )
                 )
 
-    # Added support for submodules - we cannot cache them because they are already "cached" in
+    # Renames - some files have version in their name eg. python3-package_1.1.0.bb
+    # will be renamed to python3-package_2.0.0.bb so we need to record this change if observed
+    version_re = re.compile(r"([a-zA-Z0-9\-\.]+)_([0-9]+(?:.[0-9]+)+)")
+    renames: dict[str, str] = {}
+    for file in files:
+        if file.suffix == ".bb" and (matcher := version_re.search(file.stem)) is not None:
+            package_name = matcher.group(1)
+            package_version = matcher.group(2)
+            if package_name not in config.observe:
+                continue
+            if package_name not in renames:
+                renames[package_name] = package_version
+                continue
+            old_version, new_version = compare_versions(package_version, renames[package_name])
+            if not old_version or not new_version:
+                logger.warning(
+                    f"Could not parse versions {package_version} or {renames[package_name]}"
+                )
+                continue
+            # we get here only when package_name is already in renames
+            upgrades.append(
+                core.Upgrade(
+                    name=package_name,
+                    old_version="v" + old_version,  # prepend v for semver compliant tag naming
+                    new_version="v" + new_version,  # prepend v for semver compliant tag naming
+                )
+            )
+
+    # Submodules - we cannot cache them because they are already "cached" in
     # .git/modules directory. Hence we just get the messages from the submodule repository
     if config.submodules and repository.has_submodules:
         for file in files:

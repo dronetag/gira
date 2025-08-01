@@ -25,6 +25,7 @@ git init 2> /dev/null
 git config user.name "Test Action" && git config user.email ""
 git add .
 git commit -m "Initial commit"
+INITIAL_COMMIT=$(git rev-parse HEAD)
 
 # run on no changes in dependencies
 echo "-- Test no changes" > README.md
@@ -102,8 +103,23 @@ grep OCD-1234 output.txt
 grep OCD-567 output.txt
 
 
+echo "-- Test renames in .bb files"
+
+git reset --hard $INITIAL_COMMIT
+echo "checksum=abc\nurl=ahoj.com\n" > dep1_1.0.0.bb
+git add dep1_1.0.0.bb
+git commit -m "feat: Add dep1 bb"
+
+# now move to 1.1.0
+git mv dep1_1.0.0.bb dep1_1.1.0.bb
+echo "checksum=abd\nurl=ahoj.com\n" > dep1_1.1.0.bb
+gira > output.txt
+grep OCD-1234 output.txt  # classic check for move to version 1.1.0 but not to 1.1.1
+grep -v OCD-567 output.txt
+
+
 echo "-- Test pre-commit"
-git reset --hard
+git reset --hard $INITIAL_COMMIT
 rm -rf .gira_cache output.txt
 sed -i 's/1.0.0/1.1.1/g' west.yml
 echo "" > .git/COMMIT_EDITMSG  # clear the commit message
@@ -116,6 +132,7 @@ gira -c west.yml randomFile.txt  # gira must not override anything else than the
 grep "should stay" randomFile.txt  # gira should not touch the file
 grep -v OCD-1234 randomFile.txt
 grep -v OCD-567 randomFile.txt
+
 
 popd
 
