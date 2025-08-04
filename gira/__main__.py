@@ -22,6 +22,9 @@ def main() -> int:
     parser.add_argument("-c", "--config", type=str)
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument(
+        "-a", "--all", action="store_true", help="Include observed deps changes even with no tickets"
+    )
+    parser.add_argument(
         "-f", "--format", type=str, default="commit", help="Output format: commit, detail, markdown"
     )
     parser.add_argument("args", nargs=argparse.REMAINDER)
@@ -44,7 +47,13 @@ def main() -> int:
             logger.debug(f"Outputting to commit message file {commit_msg_file}")
             stream = Path(commit_msg_file).open("at", newline="\n")
 
-        gira.gira(conf, format=args.format, stream=stream, ref=args.ref)
+        gira.gira(
+            conf,
+            format=args.format,
+            stream=stream,
+            ref=args.ref,
+            include_changes_with_no_tickets=args.all,
+        )
         return 0
     except AlrightException as e:
         logger.info(e)

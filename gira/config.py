@@ -53,7 +53,7 @@ def _parse_file(path: Path) -> Config:
     if not config.observe:
         if not config.submodules:
             raise ConfigError("No observed dependencies and no submodules {path}")
-        logger.warn(f"No observed dependencies in {path} - will watch only submodules")
+        logger.warning(f"No observed dependencies in {path} - will watch only submodules")
     return config
 
 

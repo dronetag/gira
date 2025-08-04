@@ -19,6 +19,14 @@ def compare_versions(version_a: str, version_b: str) -> tuple[str, str]:
         logger.warning(str(e))
         return ("", "")
 
+
+def gira(
+    config: config.Config,
+    stream: TextIO,
+    format: str,
+    ref: Optional[str],
+    include_changes_with_no_tickets: bool = False,
+):
     """Main function of gira"""
     fmt = formatter.get_formatter(format, stream)
 
@@ -118,7 +126,8 @@ def compare_versions(version_a: str, version_b: str) -> tuple[str, str]:
                 f"No JIRA tickets found in commits for {upgrade.name} between"
                 f" {upgrade.new_version} and {upgrade.old_version}"
             )
-            continue
+            if not include_changes_with_no_tickets:
+                continue
 
         if fmt.needs_details:
             jira_client = jira.Jira(**config.jira)
