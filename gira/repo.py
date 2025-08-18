@@ -133,10 +133,10 @@ class Repo:
             logger.warning(f"Not getting commit messages for downgrade of {self.path.name}")
             return []
 
-        commits = self.repo.walk(current_commit.oid)
+        commits = self.repo.walk(current_commit.id)
         messages: list[str] = []
         for i, commit in enumerate(commits):
-            if commit.oid.hex == past_commit.oid.hex:
+            if commit.id == past_commit.id:
                 break
             if i >= Repo.MESSAGE_LIMIT:
                 logger.warning(f"Reached limit {Repo.MESSAGE_LIMIT} commits for {self.path.name}")
