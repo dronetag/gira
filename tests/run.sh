@@ -79,6 +79,39 @@ grep OCD-1234 output.txt
 not_contains OCD-567 output.txt
 
 
+echo "-- Test range-pinned dependency (lower bound)"
+git reset --hard $INITIAL_COMMIT
+rm -rf .gira_cache output.txt
+# bump only the lower bound of the range-pinned dep: >=1.0.0 -> >=1.1.0
+sed -i 's/dep1-range >=1.0.0/dep1-range >=1.1.0/' pyproject.toml
+gira -c pyproject.toml > output.txt
+grep dep1-range output.txt
+grep "1.0.0" output.txt
+grep "1.1.0" output.txt
+grep OCD-1234 output.txt
+not_contains OCD-567 output.txt
+
+# unit-level coverage of the specifier handling (==, >=, ~=, extras, unpinned)
+python3 - <<'PY'
+from gira.deps import parse_pytoml
+obs = {"a", "b", "c", "d", "e"}
+content = '''
+[project]
+name = "x"
+dependencies = [
+  "a >=1.13.0, <2.0",
+  "b ==0.14.0",
+  "c[extra] ~=2.3.4 ; python_version < '3.11'",
+  "d > 2.1",
+  "e",
+]
+'''
+got = parse_pytoml(content, obs)
+assert got == {"a": "v1.13.0", "b": "v0.14.0", "c": "v2.3.4", "d": "v2.1"}, got
+print("specifier unit checks passed")
+PY
+
+
 echo "-- Test setuptools dynamic dependencies (requirements.txt)"
 git reset --hard $INITIAL_COMMIT
 rm -rf .gira_cache output.txt

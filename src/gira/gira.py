@@ -44,18 +44,27 @@ def gira(
     # extract changes from diffs of locks or other dependency specifying files
     upgrades: list[core.Upgrade] = []
     for file in files:
-        logger.debug(f"Processing {file} for dependencies")
         if not deps.is_parsable(file):
+            logger.debug(f"Skipping {file} - no dependency parser for it")
             continue
+        logger.debug(f"Processing {file} for dependencies")
         pre = deps.parse(file, repository.get_old_content(file), config.observe)
         post = deps.parse(file, repository.get_current_content(file), config.observe)
+        logger.debug(f"  observed dependencies in {file} before: {pre}")
+        logger.debug(f"  observed dependencies in {file} after:  {post}")
         for dep_name in pre.keys():
             if dep_name in post and pre.get(dep_name) != post.get(dep_name):
+                logger.debug(
+                    f"  detected change of {dep_name}: {pre.get(dep_name)} => {post.get(dep_name)}"
+                )
                 upgrades.append(
                     core.Upgrade(
                         name=dep_name, old_version=pre.get(dep_name), new_version=post.get(dep_name)
                     )
                 )
+            elif dep_name not in post:
+                logger.debug(f"  {dep_name} disappeared in the new version of {file} - ignoring")
+    logger.debug(f"Detected {len(upgrades)} dependency change(s) from files: {upgrades}")
 
     # Renames - some files have version in their name eg. python3-package_1.1.0.bb
     # will be renamed to python3-package_2.0.0.bb so we need to record this change if observed

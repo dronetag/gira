@@ -38,8 +38,9 @@ changelog generation (`gira --format markdown -r <previousTag>`).
 | `*.bb` | Yocto/BitBake recipe renames (`pkg_1.0.0.bb` → `pkg_1.1.0.bb`) |
 | git submodules | submodule pointer changes |
 
-Gira tracks dependencies pinned to an exact version; ranges and unpinned entries are skipped, since
-there is no single version to compare.
+Gira tracks the version each dependency is pinned to. With a range it uses the lower bound, so the
+common `name >=X.Y.Z, <MAJOR` convention works (`>=1.13.0` is tracked as `v1.13.0`, and bumping it to
+`>=1.14.0` is reported as `v1.13.0 => v1.14.0`). Entries with no version at all are skipped.
 
 ## Installation
 

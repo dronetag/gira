@@ -91,8 +91,13 @@ jobs:
       - name: Install package
         run: pip install $(find dist/ -name '*.tar.gz')
 
+      - name: Run unit tests
+        run: |
+          pip install pytest
+          pytest -v
+
       - name: Ensure envsubst is available
         run: which envsubst || sudo apt-get update && sudo apt-get install -y gettext-base
 
-      - name: Run tests
+      - name: Run integration tests
         run: bash run_tests.sh

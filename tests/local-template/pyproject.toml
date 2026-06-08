@@ -17,6 +17,7 @@ dependencies = [
   "pyyaml",
   "jira",
   "dep1-pytoml==1.0.0",
+  "dep1-range >=1.0.0, <2.0",
 ]
 
 [project.optional-dependencies]
@@ -28,3 +29,4 @@ dev = [
 [tool.gira.observe]
 dep1-pytoml = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
 dep1-opt = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
+dep1-range = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"

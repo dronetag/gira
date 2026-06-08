@@ -44,26 +44,34 @@ def parse(path: Path, content: str, observed: dict[str, str]) -> dict[str, str]:
     raise NotImplementedError(f"No dependency parser for {path.name}")
 
 
-def _pinned_requirement(line: str) -> Optional[tuple[str, str]]:
-    """Return (name, "vX.Y.Z") for an exactly-pinned requirement, else None.
+_name_re = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
+
+
+def _requirement_version(line: str) -> Optional[tuple[str, str]]:
+    """Return (name, "vX.Y.Z") for a requirement, using the first version in its
+    specifier (the lower bound), else None.
 
     Handles the PEP 508 strings used in project.dependencies,
-    project.optional-dependencies and requirements files. Environment markers
-    and extras are ignored; only exact pins (==) carry a diffable version.
+    project.optional-dependencies and requirements files, with any specifier
+    (==, >=, ~=, >, ...). The dronetag convention pins observed dependencies as
+    `name >=X.Y.Z, <MAJOR`, so the lower bound is the version being required.
+    Environment markers, comments and extras are ignored; unpinned dependencies
+    (no version at all) yield None.
 
     Example:
-        "pygit2==1.13.3; os_name != 'nt'" -> ("pygit2", "v1.13.3")
-        "name[extra] ==1.0.0"             -> ("name", "v1.0.0")
-        "django>2.1"                      -> None
+        "pygit2==1.13.3; os_name != 'nt'"  -> ("pygit2", "v1.13.3")
+        "firmware-clients >=1.13.0, <2.0"  -> ("firmware-clients", "v1.13.0")
+        "name[extra] ~=1.0.0"              -> ("name", "v1.0.0")
+        "dtopener"                         -> None
     """
-    if "==" not in line:
+    line = line.split(";", 1)[0].split("#", 1)[0]  # drop markers and comments
+    name_match = _name_re.match(line)
+    if name_match is None:
         return None
-    line = line.split(";", 1)[0]  # drop environment markers
-    name, _, version = line.partition("==")
-    name = name.strip().split("[")[0].strip()  # drop extras like name[extra]
-    if not name:
-        return None
-    version_match = version_re.search(version)
+    name = name_match.group(1)
+    specifier = line[name_match.end() :]
+    specifier = re.sub(r"^\s*\[[^\]]*\]", "", specifier)  # drop extras like [extra]
+    version_match = version_re.search(specifier)
     if version_match is None:
         return None
     return name, "v" + version_match.group(1).strip()
@@ -74,19 +82,19 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
     parsed = toml.loads(content)
 
     # project.dependencies and every project.optional-dependencies group share the
-    # same "name ==X.Y.Z" requirement format, e.g.
+    # same PEP 508 requirement format, e.g.
     #     [project]
-    #     dependencies = ["pygit2==1.13.3; os_name != 'nt'", "django>2.1"]
+    #     dependencies = ["pygit2>=1.13.3; os_name != 'nt'", "django==2.1"]
     #     [project.optional-dependencies]
     #     dev = ["ruff==0.4.0"]
-    #     test = ["pytest==8.1.1"]
+    #     test = ["pytest>=8.1.1, <9"]
     requirement_lists: list[Any] = [_section(parsed, "project.dependencies")]
     requirement_lists.extend(_section(parsed, "project.optional-dependencies").values())
     for requirements in requirement_lists:
         if not isinstance(requirements, list):
             continue
         for line in requirements:
-            pin = _pinned_requirement(line)
+            pin = _requirement_version(line)
             if pin is None:
                 continue
             name, version = pin
@@ -120,7 +128,7 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
 
 
 def parse_requirements(content: str, observed: dict[str, str]) -> dict[str, str]:
-    """Extract exactly-pinned observed dependencies from a pip requirements file.
+    """Extract observed dependencies from a pip requirements file.
 
     Requirements files are the target of setuptools' dynamic dependencies, so a
     project keeping its dependencies out of pyproject.toml is still watched:
@@ -130,18 +138,18 @@ def parse_requirements(content: str, observed: dict[str, str]) -> dict[str, str]
         [tool.setuptools.dynamic]
         dependencies = {file = ["requirements.txt"]}
 
-    Only exact pins (==) carry a concrete version to diff, mirroring the
+    The first version in each specifier (the lower bound) is used, mirroring the
     project.dependencies parsing above. Comments, environment markers and extras
     are ignored.
 
     Example:
         pygit2 ==1.18.0                       # tracked -> v1.18.0
-        dep1-req[extra] ==1.0.0 ; python_version < '3.11'  # tracked -> v1.0.0
-        other-lib >=2.1.3, <3.0               # no exact pin -> skipped
+        dep1-req[extra] >=1.0.0 ; python_version < '3.11'  # tracked -> v1.0.0
+        other-lib                             # no version -> skipped
     """
     dependencies: dict[str, str] = {}
     for raw in content.splitlines():
-        pin = _pinned_requirement(raw.split("#", 1)[0].strip())  # drop comments
+        pin = _requirement_version(raw)
         if pin is None:
             continue
         name, version = pin
