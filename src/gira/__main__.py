@@ -22,7 +22,10 @@ def main() -> int:
     parser.add_argument("-c", "--config", type=str)
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument(
-        "-a", "--all", action="store_true", help="Include observed deps changes even with no tickets"
+        "-a",
+        "--all",
+        action="store_true",
+        help="Include observed deps changes even with no tickets",
     )
     parser.add_argument(
         "-f", "--format", type=str, default="commit", help="Output format: commit, detail, markdown"

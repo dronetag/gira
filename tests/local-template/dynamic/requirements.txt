@@ -1,0 +1,4 @@
+click
+pyyaml
+dep1-req[extra] ==1.0.0 ; python_version < '3.11'  # tracked via setuptools dynamic deps
+other-lib >=2.1.3, <3.0

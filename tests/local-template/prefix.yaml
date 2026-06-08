@@ -1,0 +1,7 @@
+gira:
+  observe:
+    dep1-west: "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
+  jira:
+    # only DH-* keys are looked for; the dep1 commits mention OCD-* so they are
+    # filtered out and auto-detection of other prefixes is disabled
+    prefix: DH

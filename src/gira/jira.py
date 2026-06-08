@@ -2,7 +2,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from jira import JIRA as JIRAClient
 from jira import JIRAError
@@ -11,11 +11,29 @@ from . import logger
 from .config import ConfigError
 
 _ = JIRAError
-_ticket_re = re.compile(r"(?P<ticket>[A-Z]+-\d+)")
+# By default any uppercase prefix is auto-detected (e.g. PROJ-123). A configured
+# prefix narrows this down and disables the auto-detection (see ticket_pattern).
+DEFAULT_TICKET_RE = re.compile(r"(?P<ticket>[A-Z]+-\d+)")
 
 
-def extract_ticket_names(msg: str) -> list[str]:
-    return _ticket_re.findall(msg)
+def ticket_pattern(prefix: Optional[Union[str, list[str]]] = None) -> re.Pattern:
+    """Compile the regex used to find JIRA keys in commit messages.
+
+    Without a prefix any uppercase key is matched (PROJ-123). With a prefix
+    (a string like "DH" or a list like ["DH", "OCD"]) only those exact prefixes
+    are matched, so unrelated "WORD-123" patterns are no longer auto-detected.
+    """
+    if not prefix:
+        return DEFAULT_TICKET_RE
+    prefixes = [prefix] if isinstance(prefix, str) else list(prefix)
+    group = "|".join(re.escape(p) for p in prefixes if p)
+    if not group:
+        return DEFAULT_TICKET_RE
+    return re.compile(rf"(?P<ticket>(?:{group})-\d+)")
+
+
+def extract_ticket_names(msg: str, pattern: re.Pattern = DEFAULT_TICKET_RE) -> list[str]:
+    return pattern.findall(msg)
 
 
 @dataclass(unsafe_hash=True)
@@ -32,8 +50,8 @@ class Ticket:
         return self.name
 
 
-def extract_tickets(msg: str) -> list[Ticket]:
-    return [Ticket(name) for name in extract_ticket_names(msg)]
+def extract_tickets(msg: str, pattern: re.Pattern = DEFAULT_TICKET_RE) -> list[Ticket]:
+    return [Ticket(name) for name in extract_ticket_names(msg, pattern)]
 
 
 def _get_value(value: Optional[str]):
@@ -59,6 +77,11 @@ def _get_value(value: Optional[str]):
     return p.read_text().strip()
 
 
+def _from_env(field: str) -> str:
+    """Fallback to the JIRA_<FIELD> or GIRA_JIRA_<FIELD> environment variable."""
+    return os.environ.get(f"JIRA_{field}") or os.environ.get(f"GIRA_JIRA_{field}") or ""
+
+
 class Jira:
     url: str
     token: Optional[str]
@@ -68,9 +91,11 @@ class Jira:
     _client: Optional[JIRAClient]
 
     def __init__(self, url: str = "", token: str = "", email: str = "", **_: Any):
-        self.url = url
-        self.token = _get_value(token)
-        self.email = _get_value(email)
+        # Config values win; otherwise fall back to JIRA_<FIELD>/GIRA_JIRA_<FIELD>.
+        # Each value may also use the env:VARNAME or file:path syntax (see _get_value).
+        self.url = _get_value(url) or _from_env("URL")
+        self.token = _get_value(token) or _from_env("TOKEN")
+        self.email = _get_value(email) or _from_env("EMAIL")
         self.projects = []
         self._client = None
         self._connect_error = 0

@@ -1,0 +1,98 @@
+name: Build and Test
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+    outputs:
+      existed:
+        description: "String true|false describing previous existence of the version"
+        value: ${{ jobs.get-version.outputs.existed }}
+      version:
+        description: "New released version in form of X.Y.Z"
+        value: ${{ jobs.get-version.outputs.version }}
+      prerelease:
+        description: "String true|false whether the version is a pre-release"
+        value: ${{ jobs.get-version.outputs.prerelease }}
+      changelog:
+        description: "Changelog string in markdown format"
+        value: ${{ jobs.get-version.outputs.changelog }}
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_MIN_VERSION: '3.10'
+
+jobs:
+
+  get-version:
+    uses: ./.github/workflows/get-version.yml
+    secrets: inherit
+
+  build:
+    name: Build the package
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    needs: [get-version]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_MIN_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_MIN_VERSION }}
+
+      - name: Export version to __version__.py
+        run: |
+          echo 'version="${{ needs.get-version.outputs.version }}"' | tee src/*/__version__.py
+          cat src/*/__version__.py
+
+      - name: Build package
+        run: |
+          pip install --upgrade build
+          python -m build
+
+      - name: Export built package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+
+  test:
+    needs: [build, get-version]
+    name: Run automated tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    env:
+      VERSION: ${{ needs.get-version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download built package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # gira's tests are shell-based integration tests (see run_tests.sh) that
+      # exercise the installed `gira` entry point. We install the freshly built
+      # package - never ./src - so we test exactly what gets shipped.
+      - name: Install package
+        run: pip install $(find dist/ -name '*.tar.gz')
+
+      - name: Ensure envsubst is available
+        run: which envsubst || sudo apt-get update && sudo apt-get install -y gettext-base
+
+      - name: Run tests
+        run: bash run_tests.sh

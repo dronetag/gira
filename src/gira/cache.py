@@ -30,7 +30,11 @@ def cache(name: str, url: str) -> pygit2.Repository:
         )
     else:
         logger.debug("Fetching from origin")
+        # Pass --git-dir explicitly instead of relying on bare-repo discovery via cwd,
+        # which git refuses under `safe.bareRepository = explicit`.
         subprocess.run(
-            ["git", "fetch", "origin"], cwd=str(repo_dir), check=True, capture_output=True
+            ["git", "--git-dir", str(repo_dir), "fetch", "origin"],
+            check=True,
+            capture_output=True,
         )
     return repo.Repo(repo_dir, ref="HEAD", bare=True)

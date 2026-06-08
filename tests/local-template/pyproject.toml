@@ -19,5 +19,12 @@ dependencies = [
   "dep1-pytoml==1.0.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "ruff",
+  "dep1-opt==1.0.0",
+]
+
 [tool.gira.observe]
 dep1-pytoml = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"
+dep1-opt = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"

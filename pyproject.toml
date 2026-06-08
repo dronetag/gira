@@ -1,21 +1,27 @@
 [build-system]
-requires = ["setuptools >= 59.0"]
+requires = ["setuptools >= 68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "gira"
-version = "1.2.1"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 description = "GIRA places JIRA tickets from your dependencies into your commit message"
-readme = "README.md"
 license.text = "MIT"
 authors = [{name = "Tomas Peterka", email = "tomas.peterka@dronetag.cz"},]
+dynamic = ["version"]
+readme = "README.md"
 dependencies = [
   "pygit2 >=1.18.0",
   "tomli; python_version < '3.11'",
   "pyyaml",
   "jira",
 ]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.dynamic]
+version = {attr = "gira.__version__.version"}
 
 [project.scripts]
 gira = "gira.__main__:main"
@@ -25,6 +31,7 @@ dev = [
   "ruff",
   "mypy",
   "wheel",
+  "build",
   "pre-commit",
   "types-PyYAML",
 ]
@@ -36,9 +43,11 @@ indent-width = 4
 [tool.ruff.lint]
 select = ["F", "E", "I"]  # F: pyflakes, E: pycodestyle, I: isort
 ignore = []
+exclude = ["tests/*"]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+

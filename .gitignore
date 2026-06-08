@@ -1,8 +1,20 @@
-/.vscode
-/.idea
-/.mypy_cache
-/.pytest_cache
+/dist
+/build
+/.vscode/launch.json
+
+.venv
+.idea
+.gira_cache
+.mypy_cache
+.pytest_cache
+.ruff_cache
+
+# gira integration-test scratch (see tests/run.sh)
+/tests/local
+/tests/remote/dep1
+output.txt
 
 *.egg-info
 *.pyc
 *.pyo
+__pycache__

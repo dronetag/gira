@@ -1,13 +1,21 @@
 # File introduces automated checks triggered on git events
 # to enable run `pip install pre-commit && pre-commit install`
 
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+  # - prepare-commit-msg  # allow together with gira
+
+default_stages:
+  - pre-commit
+
 repos:
   - repo: local
     hooks:
 
     - id: ruff
       name: ruff
-      entry: ruff --fix
+      entry: ruff check
       language: system
       types: [python]
       stages: [pre-commit]
@@ -27,9 +35,10 @@ repos:
       stages: [pre-commit]
 
   - repo: https://github.com/dronetag/pre-commit-hooks
-    rev: v1.0.0
+    rev: v1.1.0
     hooks:
     - id: check-email-domain
+      args: ["dronetag.cz", "dronetag.com"]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0

@@ -10,7 +10,7 @@ tar -xf dep1.tar
 popd
 
 rm -rf local
-mkdir -p local/poetry
+mkdir -p local/poetry local/dynamic
 envsubst < local-template/poetry/pyproject.toml > local/poetry/pyproject.toml
 envsubst < local-template/poetry/poetry.lock > local/poetry/poetry.lock
 envsubst < local-template/pyproject.toml > local/pyproject.toml
@@ -18,6 +18,9 @@ envsubst < local-template/pubspec.yaml > local/pubspec.yaml
 envsubst < local-template/west.yml > local/west.yml
 envsubst < local-template/west.yml > local/west-SOMETHING.yaml
 envsubst < local-template/.gira.yaml > local/.gira.yaml
+envsubst < local-template/prefix.yaml > local/prefix.yaml
+envsubst < local-template/dynamic/pyproject.toml > local/dynamic/pyproject.toml
+envsubst < local-template/dynamic/requirements.txt > local/dynamic/requirements.txt
 
 
 function not_contains {
@@ -63,6 +66,32 @@ grep OCD-1234 output.txt
 not_contains OCD-567 output.txt
 
 
+echo "-- Test project.optional-dependencies"
+git reset --hard $INITIAL_COMMIT
+rm -rf .gira_cache output.txt
+# bump only the dep living in the [project.optional-dependencies] dev group
+sed -i 's/dep1-opt==1.0.0/dep1-opt==1.1.0/' pyproject.toml
+gira -c pyproject.toml > output.txt
+grep dep1-opt output.txt
+grep "1.0.0" output.txt
+grep "1.1.0" output.txt
+grep OCD-1234 output.txt
+not_contains OCD-567 output.txt
+
+
+echo "-- Test setuptools dynamic dependencies (requirements.txt)"
+git reset --hard $INITIAL_COMMIT
+rm -rf .gira_cache output.txt
+# bump the pinned dep in requirements.txt - pyproject.toml itself is unchanged
+sed -i 's/1.0.0/1.1.1/g' dynamic/requirements.txt
+gira -c dynamic/pyproject.toml > output.txt
+grep dep1-req output.txt
+grep "1.0.0" output.txt
+grep "1.1.1" output.txt
+grep OCD-1234 output.txt
+grep OCD-567 output.txt
+
+
 echo "-- Test pubspec.yaml"
 git reset --hard $INITIAL_COMMIT
 rm -rf .gira_cache output.txt
@@ -91,6 +120,33 @@ gira -c west-SOMETHING.yaml > output.txt
 grep dep1-west output.txt
 grep OCD-1234 output.txt
 not_contains OCD-567 output.txt
+
+
+echo "-- Test JIRA key prefix filtering"
+git reset --hard $INITIAL_COMMIT
+rm -rf .gira_cache output.txt
+sed -i 's/1.0.0/1.1.0/g' west.yml
+# auto-detection (no configured prefix) finds the OCD-* ticket
+gira -c west.yml > output.txt
+grep dep1-west output.txt
+grep OCD-1234 output.txt
+# with jira.prefix=DH the OCD-* ticket is filtered out (change still reported via -a)
+rm -rf .gira_cache output.txt
+gira -c prefix.yaml -a > output.txt
+grep dep1-west output.txt
+not_contains OCD-1234 output.txt
+
+# prefix matching at the unit level: default auto-detect, single and multiple prefixes
+python3 - <<'PY'
+from gira import jira
+assert jira.extract_ticket_names("fix ABC-1 and DH-22") == ["ABC-1", "DH-22"]
+assert jira.extract_ticket_names("ABC-1 DH-22 OCD-3", jira.ticket_pattern("DH")) == ["DH-22"]
+assert jira.extract_ticket_names("ABC-1 DH-22 OCD-3", jira.ticket_pattern(["DH", "OCD"])) == [
+    "DH-22",
+    "OCD-3",
+]
+print("prefix unit checks passed")
+PY
 
 
 echo "-- Test moving from 1.0.0 to 1.1.0 and then to 1.1.1"

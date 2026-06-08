@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gira-test-dynamic"
+version = "0.0.0"
+requires-python = ">=3.8"
+description = "Project whose dependencies are dynamic (setuptools), read from requirements.txt"
+readme = "README.md"
+license.text = "MIT"
+authors = [{name = "Tomas Peterka", email = "tomas.peterka@dronetag.cz"},]
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.gira.observe]
+dep1-req = "file://${GIRA_TEST_ROOT}/remote/dep1/.git"

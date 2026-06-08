@@ -37,6 +37,10 @@ def gira(
     files: list[Path] = repository.changed_files()
     logger.debug(f"Changed files from {repository.ref}: {files}")
 
+    # Which JIRA keys to look for. With jira.prefix set (e.g. "DH" or ["DH", "OCD"])
+    # only those prefixes are matched; otherwise any uppercase prefix is auto-detected.
+    ticket_pattern = jira.ticket_pattern(config.jira.get("prefix"))
+
     # extract changes from diffs of locks or other dependency specifying files
     upgrades: list[core.Upgrade] = []
     for file in files:
@@ -119,7 +123,11 @@ def gira(
             f"Messages for {upgrade.name} between {upgrade.new_version} and"
             f" {upgrade.old_version}: {upgrade.messages}"
         )
-        tickets = {ticket for m in upgrade.messages for ticket in jira.extract_ticket_names(m)}
+        tickets = {
+            ticket
+            for m in upgrade.messages
+            for ticket in jira.extract_ticket_names(m, ticket_pattern)
+        }
         logger.debug(f"Extracted tickets: {tickets}")
         if len(tickets) == 0:
             logger.info(

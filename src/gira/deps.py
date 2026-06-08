@@ -2,7 +2,7 @@
 
 import re
 import sys
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 
@@ -19,6 +19,7 @@ version_re = re.compile(r"""([0-9]+\.[0-9]+[^"',]*)""")
 PYTOML_FILENAME = "pyproject.toml"
 PUBSPEC_PATTERN = re.compile(r"pubspec.*\.ya?ml")
 WEST_PATTERN = re.compile(r"west.*\.ya?ml")
+REQUIREMENTS_PATTERN = re.compile(r"requirements.*\.txt")
 
 
 def is_parsable(filepath: Path) -> bool:
@@ -27,6 +28,7 @@ def is_parsable(filepath: Path) -> bool:
         filepath.name == PYTOML_FILENAME
         or PUBSPEC_PATTERN.match(filepath.name) is not None
         or WEST_PATTERN.match(filepath.name) is not None
+        or REQUIREMENTS_PATTERN.match(filepath.name) is not None
     )
 
 
@@ -37,35 +39,59 @@ def parse(path: Path, content: str, observed: dict[str, str]) -> dict[str, str]:
         return parse_pubspec_yaml(content, observed)
     if WEST_PATTERN.match(path.name) is not None:
         return parse_west_yaml(content, observed)
+    if REQUIREMENTS_PATTERN.match(path.name) is not None:
+        return parse_requirements(content, observed)
     raise NotImplementedError(f"No dependency parser for {path.name}")
+
+
+def _pinned_requirement(line: str) -> Optional[tuple[str, str]]:
+    """Return (name, "vX.Y.Z") for an exactly-pinned requirement, else None.
+
+    Handles the PEP 508 strings used in project.dependencies,
+    project.optional-dependencies and requirements files. Environment markers
+    and extras are ignored; only exact pins (==) carry a diffable version.
+
+    Example:
+        "pygit2==1.13.3; os_name != 'nt'" -> ("pygit2", "v1.13.3")
+        "name[extra] ==1.0.0"             -> ("name", "v1.0.0")
+        "django>2.1"                      -> None
+    """
+    if "==" not in line:
+        return None
+    line = line.split(";", 1)[0]  # drop environment markers
+    name, _, version = line.partition("==")
+    name = name.strip().split("[")[0].strip()  # drop extras like name[extra]
+    if not name:
+        return None
+    version_match = version_re.search(version)
+    if version_match is None:
+        return None
+    return name, "v" + version_match.group(1).strip()
 
 
 def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
     dependencies: dict[str, str] = {}
     parsed = toml.loads(content)
 
-    if _section(parsed, "project.dependencies"):
-        """Parse standard pytoml dependencies definition
-
-        Example:
-            [project]
-            ...
-            dependencies = [
-                "pygit2==1.13.3; os_name != 'nt'",
-                "django>2.1; os_name != 'nt'",
-            ]
-        """
-        for line in _section(parsed, "project.dependencies"):
-            if "==" not in line:
+    # project.dependencies and every project.optional-dependencies group share the
+    # same "name ==X.Y.Z" requirement format, e.g.
+    #     [project]
+    #     dependencies = ["pygit2==1.13.3; os_name != 'nt'", "django>2.1"]
+    #     [project.optional-dependencies]
+    #     dev = ["ruff==0.4.0"]
+    #     test = ["pytest==8.1.1"]
+    requirement_lists: list[Any] = [_section(parsed, "project.dependencies")]
+    requirement_lists.extend(_section(parsed, "project.optional-dependencies").values())
+    for requirements in requirement_lists:
+        if not isinstance(requirements, list):
+            continue
+        for line in requirements:
+            pin = _pinned_requirement(line)
+            if pin is None:
                 continue
-            name, version = line.split("==")
-            name = name.strip()
-            if name not in observed:
-                continue
-            version_match = version_re.search(version)
-            if version_match is None:
-                continue
-            dependencies[name] = "v" + version_match.group(1)
+            name, version = pin
+            if name in observed:
+                dependencies[name] = version
 
     if _section(parsed, "tool.poetry.dependencies"):
         """The developer could decide not to version poetry.lock so we need to parse pyproject.toml
@@ -89,6 +115,38 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
             if version_match is None:
                 continue
             dependencies[dependency] = "v" + version_match.group(1)
+
+    return dependencies
+
+
+def parse_requirements(content: str, observed: dict[str, str]) -> dict[str, str]:
+    """Extract exactly-pinned observed dependencies from a pip requirements file.
+
+    Requirements files are the target of setuptools' dynamic dependencies, so a
+    project keeping its dependencies out of pyproject.toml is still watched:
+
+        [project]
+        dynamic = ["dependencies"]
+        [tool.setuptools.dynamic]
+        dependencies = {file = ["requirements.txt"]}
+
+    Only exact pins (==) carry a concrete version to diff, mirroring the
+    project.dependencies parsing above. Comments, environment markers and extras
+    are ignored.
+
+    Example:
+        pygit2 ==1.18.0                       # tracked -> v1.18.0
+        dep1-req[extra] ==1.0.0 ; python_version < '3.11'  # tracked -> v1.0.0
+        other-lib >=2.1.3, <3.0               # no exact pin -> skipped
+    """
+    dependencies: dict[str, str] = {}
+    for raw in content.splitlines():
+        pin = _pinned_requirement(raw.split("#", 1)[0].strip())  # drop comments
+        if pin is None:
+            continue
+        name, version = pin
+        if name in observed:
+            dependencies[name] = version
 
     return dependencies
 
