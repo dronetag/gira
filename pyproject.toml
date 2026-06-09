@@ -7,7 +7,10 @@ name = "gira"
 requires-python = ">=3.10"
 description = "GIRA places JIRA tickets from your dependencies into your commit message"
 license.text = "MIT"
-authors = [{name = "Tomas Peterka", email = "tomas.peterka@dronetag.cz"},]
+authors = [
+  {name = "Tomas Peterka", email = "tomas.peterka@dronetag.cz"},
+  {name = "Tomas Benes", email = "tomas@dronetag.cz"},
+]
 dynamic = ["version"]
 readme = "README.md"
 dependencies = [
@@ -15,6 +18,7 @@ dependencies = [
   "tomli; python_version < '3.11'",
   "pyyaml",
   "jira",
+  "packaging",
 ]
 
 [tool.setuptools]
