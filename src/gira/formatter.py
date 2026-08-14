@@ -37,7 +37,7 @@ class CommitFormatter(Formatter):
             chars = self._stream.write("\n    ")
 
         def _s(s: Optional[str]) -> Optional[str]:  # shorten
-            return s[:7] if s and len(s) > 10 else s
+            return s[:7] + "..." if s and len(s) > 20 else s
 
         chars += self._stream.write(f"({_s(upgrade.old_version)} -> {_s(upgrade.new_version)})")
 

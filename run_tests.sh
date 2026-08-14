@@ -11,5 +11,7 @@ if bash run.sh > /dev/null; then
     echo "Tests passed"
 else
     echo "Tests failed"
+    echo "Content of output.txt:"
+    cat local/output.txt
     exit 1
 fi

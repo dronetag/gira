@@ -2,6 +2,7 @@
 
 import re
 import sys
+from dataclasses import dataclass
 from typing import Any, Optional
 
 import yaml
@@ -14,12 +15,25 @@ from pathlib import Path
 
 from . import logger
 
-version_re = re.compile(r"""([0-9]+\.[0-9]+[^"',]*)""")
+version_re = re.compile(r"""([0-9]+\.[0-9]+[^"', ]*)""")
 
 PYTOML_FILENAME = "pyproject.toml"
 PUBSPEC_PATTERN = re.compile(r"pubspec.*\.ya?ml")
 WEST_PATTERN = re.compile(r"west.*\.ya?ml")
 REQUIREMENTS_PATTERN = re.compile(r"requirements.*\.txt")
+
+
+@dataclass
+class Dependency:
+    name: str
+    version: str
+    repository: Optional[str] = None
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, value):
+        return isinstance(value, Dependency) and value.name == self.name
 
 
 def is_parsable(filepath: Path) -> bool:
@@ -29,10 +43,12 @@ def is_parsable(filepath: Path) -> bool:
         or PUBSPEC_PATTERN.match(filepath.name) is not None
         or WEST_PATTERN.match(filepath.name) is not None
         or REQUIREMENTS_PATTERN.match(filepath.name) is not None
+        or is_kas_yaml(filepath)
     )
 
 
-def parse(path: Path, content: str, observed: dict[str, str]) -> dict[str, str]:
+def parse(path: Path, content: str, observed: dict[str, str]) -> dict[str, Dependency]:
+    """Return dictionary with {dependency: version} items"""
     if path.name == PYTOML_FILENAME:
         return parse_pytoml(content, observed)
     if PUBSPEC_PATTERN.match(path.name) is not None:
@@ -77,8 +93,8 @@ def _requirement_version(line: str) -> Optional[tuple[str, str]]:
     return name, "v" + version_match.group(1).strip()
 
 
-def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
-    dependencies: dict[str, str] = {}
+def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, Dependency]:
+    dependencies: dict[str, Dependency] = {}
     parsed = toml.loads(content)
 
     # project.dependencies and every project.optional-dependencies group share the
@@ -99,7 +115,7 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
                 continue
             name, version = pin
             if name in observed:
-                dependencies[name] = version
+                dependencies[name] = Dependency(name=name, version=version)
 
     if _section(parsed, "tool.poetry.dependencies"):
         """The developer could decide not to version poetry.lock so we need to parse pyproject.toml
@@ -122,7 +138,9 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, str]:
             version_match = version_re.search(version)
             if version_match is None:
                 continue
-            dependencies[dependency] = "v" + version_match.group(1)
+            dependencies[dependency] = Dependency(
+                name=dependency, version="v" + version_match.group(1)
+            )
 
     return dependencies
 
@@ -154,12 +172,12 @@ def parse_requirements(content: str, observed: dict[str, str]) -> dict[str, str]
             continue
         name, version = pin
         if name in observed:
-            dependencies[name] = version
+            dependencies[name] = Dependency(name=name, version=version)
 
     return dependencies
 
 
-def parse_pubspec_yaml(content: str, observed: dict[str, str]) -> dict[str, str]:
+def parse_pubspec_yaml(content: str, observed: dict[str, str]) -> dict[str, Dependency]:
     """Extracts first-order dependencies from pubspec.yaml
 
     Example:
@@ -180,7 +198,7 @@ def parse_pubspec_yaml(content: str, observed: dict[str, str]) -> dict[str, str]
               path: dart
           hive: ^2.0.4
     """
-    dependencies: dict[str, str] = {}
+    dependencies: set[Dependency] = set()
     parsed = yaml.load(content, Loader=yaml.SafeLoader)
     if not parsed or "dependencies" not in parsed:
         logger.warning("pubspec.yaml is empty or does not contain dependencies")
@@ -197,12 +215,12 @@ def parse_pubspec_yaml(content: str, observed: dict[str, str]) -> dict[str, str]
                 version = "v" + value["version"]
             elif "git" in value and "ref" in value["git"]:
                 version = value["git"]["ref"]
-        dependencies[dependency] = version
+        dependencies[dependency] = Dependency(name=dependency, version=version)
 
     return dependencies
 
 
-def parse_west_yaml(content: str, observed: dict[str, str]) -> dict[str, str]:
+def parse_west_yaml(content: str, observed: dict[str, str]) -> dict[str, Dependency]:
     """Extracts first-order dependencies from pubspec.yaml
 
     Example:
@@ -229,7 +247,7 @@ def parse_west_yaml(content: str, observed: dict[str, str]) -> dict[str, str]:
               repo-path: protocol
               revision: 963065664406bad9a1b9c985a10f038952397b78
     """
-    dependencies: dict[str, str] = {}
+    dependencies: dict[str, Dependency] = {}
     parsed = yaml.load(content, Loader=yaml.SafeLoader)
     if not parsed or "manifest" not in parsed:
         logger.warning("WEST is empty or does not contain dependencies")
@@ -245,7 +263,73 @@ def parse_west_yaml(content: str, observed: dict[str, str]) -> dict[str, str]:
             version = "v" + project["version"]
         elif "revision" in project:
             version = project["revision"]
-        dependencies[dependency] = version
+        dependencies[dependency] = Dependency(name=dependency, version=version)
+
+    return dependencies
+
+
+def is_kas_yaml(path: Path) -> bool:
+    if path.suffix not in (".yml", ".yaml"):
+        return False
+    try:
+        data = yaml.load(path.read_bytes(), Loader=yaml.SafeLoader)
+        if not isinstance(data, dict):
+            return False
+        # kas needs to have 'header' and 'repos' to be of our interest
+        return "header" in data and "repos" in data
+    except Exception as e:
+        logger.warning("Parsing of %s failed with %s", str(path), str(e))
+    return False
+
+
+def parse_kas_yaml(content: str, observed: dict[str, str]) -> dict[str, Dependency]:
+    """Extracts first-order dependencies recursively from a KAS yaml.
+
+        Beware that repos without commit hashes are local thus they are not dependencies
+        and will be skipped by gira.
+
+        Example:
+            header:
+            version: 1
+            includes:
+                - credentials.yml
+                - includes/dronetag-kas.yml
+                - includes/dronetag-kas-rpi.yml
+
+            repos:
+                meta-scout:
+                    path: meta-scout
+
+    ... other (included) file ...
+
+            repos:
+                meta-dronetag:
+                    branch: devel
+                    commit: debad50cbb365f96594af5e4bdf53cc6dc095935
+                    path: layers/meta-dronetag
+                    url: git@bitbucket.org:dronetag/linux-dt.git
+                    layers:
+                        meta-dt-core:
+                        meta-dt-python:
+                        meta-dt-mender:
+    """
+    dependencies: dict[str, Dependency] = {}
+    parsed = yaml.load(content, Loader=yaml.SafeLoader)
+    if not parsed or "repos" not in parsed:
+        logger.warning("KAS does not contain 'repos'")
+        return dependencies
+
+    repos: dict[str, dict[str, Any]] = parsed.get("repos", {})
+    for repo_name in repos:
+        if repo_name not in observed:
+            continue
+        if "commit" not in repos[repo_name]:
+            continue
+        dependencies[repo_name] = Dependency(
+            name=repo_name,
+            version=repos[repo_name]["commit"],
+            repository=repos[repo_name].get("url"),
+        )
 
     return dependencies
 

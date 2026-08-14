@@ -45,35 +45,35 @@ def gira(
     upgrades: list[core.Upgrade] = []
     for file in files:
         if not deps.is_parsable(file):
-            logger.debug(f"Skipping {file} - no dependency parser for it")
+            if file.suffix != ".bb":
+                logger.debug(f"Skipping {file} - no dependency parser for it")
             continue
         logger.debug(f"Processing {file} for dependencies")
         pre = deps.parse(file, repository.get_old_content(file), config.observe)
         post = deps.parse(file, repository.get_current_content(file), config.observe)
         logger.debug(f"  observed dependencies in {file} before: {pre}")
         logger.debug(f"  observed dependencies in {file} after:  {post}")
-        for dep_name in pre.keys():
-            if dep_name in post and pre.get(dep_name) != post.get(dep_name):
-                logger.debug(
-                    f"  detected change of {dep_name}: {pre.get(dep_name)} => {post.get(dep_name)}"
-                )
+        for dep in pre:
+            if dep in post and pre[dep].version != post.get(dep).version:
+                logger.debug(f"  detected change of {dep}: {pre.get(dep)} => {post.get(dep)}")
                 upgrades.append(
                     core.Upgrade(
-                        name=dep_name, old_version=pre.get(dep_name), new_version=post.get(dep_name)
+                        name=dep.name,
+                        old_version=dep.version,
+                        new_version=post[dep].version,
+                        repository=(pre[dep].repository or post[dep].repository),
                     )
                 )
-            elif dep_name not in post:
-                logger.debug(f"  {dep_name} disappeared in the new version of {file} - ignoring")
+            elif dep not in post:
+                logger.debug(f"  {dep} disappeared in the new version of {file} - ignoring")
     logger.debug(f"Detected {len(upgrades)} dependency change(s) from files: {upgrades}")
 
     # Renames - some files have version in their name eg. python3-package_1.1.0.bb
     # will be renamed to python3-package_2.0.0.bb so we need to record this change if observed
-    version_re = re.compile(r"([a-zA-Z0-9\-\.]+)_([0-9]+(?:.[0-9]+)+)")
     renames: dict[str, str] = {}
     for file in files:
-        if file.suffix == ".bb" and (matcher := version_re.search(file.stem)) is not None:
-            package_name = matcher.group(1)
-            package_version = matcher.group(2)
+        if file.suffix == ".bb" and "_" in file.name:
+            package_name, package_version = file.stem.split("_", 1)
             if package_name not in config.observe:
                 continue
             if package_name not in renames:
@@ -85,6 +85,7 @@ def gira(
                     f"Could not parse versions {package_version} or {renames[package_name]}"
                 )
                 continue
+            logger.debug(f"Found version change {file}: {old_version} -> {new_version}")
             # we get here only when package_name is already in renames
             upgrades.append(
                 core.Upgrade(
@@ -117,17 +118,30 @@ def gira(
     # modify upgrades by creating dict with keys but empty values (ready for summaries of tickets)
     for upgrade in upgrades:
         if upgrade.messages is None:
-            url = config.observe[upgrade.name]  # this might return an object with more information
-            try:
-                upgrade.messages = cache.cache(upgrade.name, url).messages(
-                    upgrade.old_version, upgrade.new_version
+            if upgrade.repository is not None:
+                upgrade.messages = (
+                    repo.Repo(module_path).messages(
+                        upgrade.old_version,
+                        upgrade.new_version,
+                    ),
                 )
-            except KeyError as e:
-                logger.error(
-                    f"Repository {upgrade.name} does not contain {e.args[0]}."
-                    " Might have been deleted locally or remotely. Skipping"
-                )
-                continue
+            elif upgrade.name in config.observe:
+                url = config.observe[
+                    upgrade.name
+                ]  # this might return an object with more information
+                try:
+                    upgrade.messages = cache.cache(upgrade.name, url).messages(
+                        upgrade.old_version, upgrade.new_version
+                    )
+                except KeyError as e:
+                    logger.error(
+                        f"Repository {upgrade.name} does not contain {e.args[0]} "
+                        "Might have been deleted locally or remotely. Skipping"
+                    )
+                    continue
+            else:
+                logger.warning("Cannot get repository URL of {upgrade.name} from anywhere")
+
         logger.debug(
             f"Messages for {upgrade.name} between {upgrade.new_version} and"
             f" {upgrade.old_version}: {upgrade.messages}"

@@ -27,6 +27,7 @@ class Upgrade:
     name: str
     old_version: Optional[str] = None
     new_version: Optional[str] = None
+    repository: Optional[str] = None
     messages: Optional[list[str]] = None
 
     def __str__(self):
