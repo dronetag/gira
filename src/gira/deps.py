@@ -138,7 +138,9 @@ def parse_pytoml(content: str, observed: dict[str, str]) -> dict[str, Dependency
             version_match = version_re.search(version)
             if version_match is None:
                 continue
-            dependencies[dependency] = Dependency(name=dependency, version="v" + version_match.group(1))
+            dependencies[dependency] = Dependency(
+                name=dependency, version="v" + version_match.group(1)
+            )
 
     return dependencies
 
@@ -283,33 +285,33 @@ def is_kas_yaml(path: Path) -> bool:
 def parse_kas_yaml(content: str, observed: dict[str, str]) -> dict[str, Dependency]:
     """Extracts first-order dependencies recursively from a KAS yaml.
 
-    Beware that repos without commit hashes are local thus they are not dependencies
-    and will be skipped by gira.
+        Beware that repos without commit hashes are local thus they are not dependencies
+        and will be skipped by gira.
 
-    Example:
-        header:
-        version: 1
-        includes:
-            - credentials.yml
-            - includes/dronetag-kas.yml
-            - includes/dronetag-kas-rpi.yml
+        Example:
+            header:
+            version: 1
+            includes:
+                - credentials.yml
+                - includes/dronetag-kas.yml
+                - includes/dronetag-kas-rpi.yml
 
-        repos:
-            meta-scout:
-                path: meta-scout
+            repos:
+                meta-scout:
+                    path: meta-scout
 
-... other (included) file ...
+    ... other (included) file ...
 
-        repos:
-            meta-dronetag:
-                branch: devel
-                commit: debad50cbb365f96594af5e4bdf53cc6dc095935
-                path: layers/meta-dronetag
-                url: git@bitbucket.org:dronetag/linux-dt.git
-                layers:
-                    meta-dt-core:
-                    meta-dt-python:
-                    meta-dt-mender:
+            repos:
+                meta-dronetag:
+                    branch: devel
+                    commit: debad50cbb365f96594af5e4bdf53cc6dc095935
+                    path: layers/meta-dronetag
+                    url: git@bitbucket.org:dronetag/linux-dt.git
+                    layers:
+                        meta-dt-core:
+                        meta-dt-python:
+                        meta-dt-mender:
     """
     dependencies: dict[str, Dependency] = {}
     parsed = yaml.load(content, Loader=yaml.SafeLoader)
@@ -326,11 +328,10 @@ def parse_kas_yaml(content: str, observed: dict[str, str]) -> dict[str, Dependen
         dependencies[repo_name] = Dependency(
             name=repo_name,
             version=repos[repo_name]["commit"],
-            repository=repos[repo_name].get("url")
+            repository=repos[repo_name].get("url"),
         )
 
     return dependencies
-
 
 
 def _section(d: dict[str, Any], path: str) -> Any:
