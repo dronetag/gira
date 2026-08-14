@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gira"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 description = "GIRA places JIRA tickets from your dependencies into your commit message"
 license.text = "MIT"
 authors = [
@@ -13,9 +13,10 @@ authors = [
 ]
 dynamic = ["version"]
 readme = "README.md"
+# beware before upgrading to 1.20.0 - it removed GIT_REPOSITORY_OPEN_BARE
+# see https://github.com/libgit2/pygit2/blob/master/CHANGELOG.md#1200-2026-08-08
 dependencies = [
-  "pygit2 >=1.18.0",
-  "tomli; python_version < '3.11'",
+  "pygit2 >=1.19.0, <1.20.0",
   "pyyaml",
   "jira",
   "packaging",

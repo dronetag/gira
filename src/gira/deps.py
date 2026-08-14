@@ -1,17 +1,12 @@
 """Dependencies module reads different"""
 
 import re
-import sys
+import tomllib as toml
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Optional
 
 import yaml
-
-if sys.version_info >= (3, 11):
-    import tomllib as toml
-else:
-    import tomli as toml
-from pathlib import Path
 
 from . import logger
 
