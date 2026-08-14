@@ -49,7 +49,9 @@ def test_parse_dispatches_by_filename():
     assert deps.parse(
         Path("a/pyproject.toml"), '[project]\ndependencies=["dep==1.0.0"]\n', observed
     )
-    assert deps.parse(Path("a/requirements.txt"), "dep==1.0.0\n", observed) == {"dep": "v1.0.0"}
+    parsed = deps.parse(Path("a/requirements.txt"), "dep==1.0.0\n", observed)
+    assert len(parsed) == 1
+    assert parsed["dep"].version == "v1.0.0"
 
 
 def test_parse_unknown_file_raises():
@@ -113,17 +115,19 @@ def test_parse_pytoml_dependencies_and_optional_groups():
     test = ["dep-test >=3.1.0"]
     """
     observed = {"dep-pin": "u", "dep-range": "u", "dep-dev": "u", "dep-test": "u"}
-    assert deps.parse_pytoml(content, observed) == {
-        "dep-pin": "v1.0.0",
-        "dep-range": "v2.4.0",
-        "dep-dev": "v1.5.0",
-        "dep-test": "v3.1.0",
-    }
+    parsed = deps.parse_pytoml(content, observed)
+    assert len(parsed) == 4
+    assert parsed["dep-pin"].version == "v1.0.0"
+    assert parsed["dep-range"].version == "v2.4.0"
+    assert parsed["dep-dev"].version == "v1.5.0"
+    assert parsed["dep-test"].version == "v3.1.0"
 
 
 def test_parse_pytoml_only_returns_observed():
     content = '[project]\ndependencies = ["a==1.0.0", "b==2.0.0"]\n'
-    assert deps.parse_pytoml(content, {"b": "u"}) == {"b": "v2.0.0"}
+    parsed = deps.parse_pytoml(content, {"b": "u"})
+    assert len(parsed) == 1
+    assert parsed["b"].version == "v2.0.0"
 
 
 def test_parse_pytoml_poetry_string_and_dict():
@@ -136,10 +140,10 @@ def test_parse_pytoml_poetry_string_and_dict():
     """
     observed = {"dep-str": "u", "dep-dict": "u", "dep-star": "u"}
     # dep-star ("*") has no version and is skipped
-    assert deps.parse_pytoml(content, observed) == {
-        "dep-str": "v2.4.20",
-        "dep-dict": "v1.7.0",
-    }
+    parsed = deps.parse_pytoml(content, observed)
+    assert len(parsed) == 2
+    assert parsed["dep-str"].version == "v2.4.20"
+    assert parsed["dep-dict"].version == "v1.7.0"
 
 
 def test_parse_pytoml_empty():
@@ -160,11 +164,11 @@ def test_parse_requirements():
 
     """
     observed = {"dep-pin": "u", "dep-range": "u", "dep-loose": "u"}
-    assert deps.parse_requirements(content, observed) == {
-        "dep-pin": "v1.18.0",
-        "dep-range": "v1.0.0",
-        "dep-loose": "v2.1.3",
-    }
+    parsed = deps.parse_requirements(content, observed)
+    assert len(parsed) == 3
+    assert parsed["dep-pin"].version == "v1.18.0"
+    assert parsed["dep-range"].version == "v1.0.0"
+    assert parsed["dep-loose"].version == "v2.1.3"
 
 
 def test_parse_requirements_empty():
@@ -190,12 +194,12 @@ def test_parse_pubspec_yaml():
       not-observed: ^9.9.9
     """
     observed = {"cupertino_icons": "u", "harald": "u", "pinned": "u", "flutter": "u"}
-    assert deps.parse_pubspec_yaml(content, observed) == {
-        "cupertino_icons": "v^1.0.2",  # string value is prefixed verbatim
-        "harald": "v2.70.6",  # git ref used as-is
-        "pinned": "v1.2.3",  # dict with explicit version
-        "flutter": "",  # sdk dependency carries no version
-    }
+    parsed = deps.parse_pubspec_yaml(content, observed)
+    assert len(parsed) == 4
+    assert parsed["cupertino_icons"].version == "v^1.0.2"  # string value is prefixed verbatim
+    assert parsed["harald"].version == "v2.70.6"  # git ref used as-is
+    assert parsed["pinned"].version == "v1.2.3"  # dict with explicit version
+    assert parsed["flutter"].version == ""  # sdk dependency carries no version
 
 
 def test_parse_pubspec_yaml_empty_or_missing_dependencies():
@@ -220,11 +224,11 @@ def test_parse_west_yaml():
           revision: deadbeef
     """
     observed = {"by-revision": "u", "by-tag": "u", "by-version": "u"}
-    assert deps.parse_west_yaml(content, observed) == {
-        "by-revision": "85a79aa10b9e403fd76e760032ef72057996828c",
-        "by-tag": "v1.4.0",
-        "by-version": "v2.5.0",
-    }
+    parsed = deps.parse_west_yaml(content, observed)
+    assert len(parsed) == 3
+    assert parsed["by-revision"].version == "85a79aa10b9e403fd76e760032ef72057996828c"
+    assert parsed["by-tag"].version == "v1.4.0"
+    assert parsed["by-version"].version == "v2.5.0"
 
 
 def test_parse_west_yaml_empty_or_missing_manifest():

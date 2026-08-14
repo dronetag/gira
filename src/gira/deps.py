@@ -165,7 +165,7 @@ def parse_requirements(content: str, observed: dict[str, str]) -> dict[str, str]
         dep1-req[extra] >=1.0.0 ; python_version < '3.11'  # tracked -> v1.0.0
         other-lib                             # no version -> skipped
     """
-    dependencies: dict[str, str] = {}
+    dependencies: dict[str, Dependency] = {}
     for raw in content.splitlines():
         pin = _requirement_version(raw)
         if pin is None:
@@ -198,7 +198,7 @@ def parse_pubspec_yaml(content: str, observed: dict[str, str]) -> dict[str, Depe
               path: dart
           hive: ^2.0.4
     """
-    dependencies: set[Dependency] = set()
+    dependencies: dict[str, Dependency] = {}
     parsed = yaml.load(content, Loader=yaml.SafeLoader)
     if not parsed or "dependencies" not in parsed:
         logger.warning("pubspec.yaml is empty or does not contain dependencies")
