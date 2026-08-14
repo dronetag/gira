@@ -236,6 +236,28 @@ def test_parse_west_yaml_empty_or_missing_manifest():
     assert deps.parse_west_yaml("other: value\n", {"dep": "u"}) == {}
 
 
+def test_parse_toml_extra_specifiers():
+    # tested specifiers: ==, >=, ~=, extras, unpinned
+    observed = {"a", "b", "c", "d", "e"}
+    content = """
+    [project]
+    name = "x"
+    dependencies = [
+        "a >=1.13.0, <2.0",
+        "b ==0.14.0",
+        "c[extra] ~=2.3.4 ; python_version < '3.11'",
+        "d > 2.1",
+        "e",
+    ]
+    """
+    parsed = deps.parse_pytoml(content, observed)
+    assert len(parsed) == 4
+    assert parsed["a"].version == "v1.13.0"
+    assert parsed["b"].version == "v0.14.0"
+    assert parsed["c"].version == "v2.3.4"
+    assert parsed["d"].version == "v2.1"
+
+
 # --------------------------------------------------------------------------- #
 # _section
 # --------------------------------------------------------------------------- #

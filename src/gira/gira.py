@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 from typing import Optional, TextIO
 
@@ -58,8 +57,8 @@ def gira(
                 logger.debug(f"  detected change of {dep}: {pre.get(dep)} => {post.get(dep)}")
                 upgrades.append(
                     core.Upgrade(
-                        name=dep.name,
-                        old_version=dep.version,
+                        name=dep,
+                        old_version=pre[dep].version,
                         new_version=post[dep].version,
                         repository=(pre[dep].repository or post[dep].repository),
                     )

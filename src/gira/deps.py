@@ -15,7 +15,7 @@ from pathlib import Path
 
 from . import logger
 
-version_re = re.compile(r"""([0-9]+\.[0-9]+[^"', ]*)""")
+version_re = re.compile(r"""([0-9]+\.[0-9]+[^"',]*)""")
 
 PYTOML_FILENAME = "pyproject.toml"
 PUBSPEC_PATTERN = re.compile(r"pubspec.*\.ya?ml")
