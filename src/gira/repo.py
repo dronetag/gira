@@ -1,9 +1,18 @@
+import re
 from pathlib import Path
 from typing import Optional
 
 import pygit2  # type: ignore
 
 from . import AlrightException, logger
+
+
+def _v2t(v: str) -> str:
+    """Version to tag because python does too many changes to package version from a tag"""
+    v = re.sub(r"\.(?=[a-zA-Z])", "-", v, count=1)
+    if "dev" in v:
+        v = re.sub(r"dev([0-9]+)", "dev.\\1", v, count=1)
+    return v
 
 
 class Repo:
@@ -121,8 +130,19 @@ class Repo:
         @throws KeyError in case of invalid references
         """
         logger.debug(f"Getting messages between {a} and {b or self.ref} for {self.path.name}")
-        past_commit = self.repo.revparse_single(a)
-        current_commit = self.repo.revparse_single(self.ref if b is None else b)
+
+        try:
+            past_commit = self.repo.revparse_single(a)
+        except KeyError:
+            # mingled tag -> version name: let's replace first "." in front of a letter with "-"
+            past_commit = self.repo.revparse_single(_v2t(a))
+
+        b = self.ref if b is None else b
+        try:
+            current_commit = self.repo.revparse_single(b)
+        except KeyError:
+            # mingled tag -> version name: let's replace first "." in front of a letter with "-"
+            current_commit = self.repo.revparse_single(_v2t(b))
 
         if not isinstance(past_commit, pygit2.Commit):
             past_commit = past_commit.peel(pygit2.Commit)
