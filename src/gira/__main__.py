@@ -5,7 +5,7 @@ import sys
 import traceback
 from pathlib import Path
 
-from . import AlrightException, gira, logger
+from . import AlrightException, gira, logger, __version__
 from . import config as config_parser
 
 
@@ -21,6 +21,7 @@ def main() -> int:
     )
     parser.add_argument("-c", "--config", type=str)
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--version", action="store_true")
     parser.add_argument(
         "-a",
         "--all",
@@ -32,6 +33,10 @@ def main() -> int:
     )
     parser.add_argument("args", nargs=argparse.REMAINDER)
     args = parser.parse_args(sys.argv[1:])
+    if args.version:
+        print(__version__)
+        return 0
+
     precommit = len(args.args) > 0 and args.args[0] == ".git/COMMIT_EDITMSG"
     stream = sys.stdout
 
