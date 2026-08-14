@@ -5,7 +5,7 @@ import sys
 import traceback
 from pathlib import Path
 
-from . import AlrightException, gira, logger, __version__
+from . import AlrightException, __version__, gira, logger
 from . import config as config_parser
 
 
@@ -43,7 +43,8 @@ def main() -> int:
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, stream=sys.stderr)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-    logger.debug(f"Arguments: {args}")
+    logger.debug(f"Gira {__version__}")
+    logger.debug(f"Args: {args}")
     try:
         conf = config_parser.from_file(Path(args.config).resolve() if args.config else None)
         if not conf.observe and not conf.submodules:
